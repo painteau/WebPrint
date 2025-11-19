@@ -14,5 +14,14 @@ return [
     'cups_port'          => 631,
     'api_token'          => 'CHANGE_ME_SECRET_TOKEN',
     'max_file_size_mb'   => 20,
-    'allowed_mime_types' => ['application/pdf'],
+    'allowed_mime_types' => [
+        'application/pdf',
+        'application/postscript',
+        'image/jpeg',
+        'image/png',
+        'image/tiff',
+        'text/plain',
+        'image/pwg-raster',
+        'image/urf',
+    ],
 ];

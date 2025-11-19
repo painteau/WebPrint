@@ -22,10 +22,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $mime = $finfo->file($file['tmp_name']);
                 $allowed = $config['allowed_mime_types'] ?? ['application/pdf'];
                 if ($mime === false || !in_array($mime, $allowed, true)) {
-                    $message = 'Type de fichier invalide (PDF requis)';
+                    $message = 'Type de fichier invalide';
                 } else {
                     $tmpDir = sys_get_temp_dir();
-                    $tmpName = 'print_' . time() . '_' . bin2hex(random_bytes(4)) . '.pdf';
+                    $map = [
+                        'application/pdf' => '.pdf',
+                        'application/postscript' => '.ps',
+                        'image/jpeg' => '.jpg',
+                        'image/png' => '.png',
+                        'image/tiff' => '.tiff',
+                        'text/plain' => '.txt',
+                        'image/pwg-raster' => '.pwg',
+                        'image/urf' => '.urf',
+                    ];
+                    $ext = $map[$mime] ?? '.bin';
+                    $tmpName = 'print_' . time() . '_' . bin2hex(random_bytes(4)) . $ext;
                     $dest = $tmpDir . DIRECTORY_SEPARATOR . $tmpName;
                     if (!@move_uploaded_file($file['tmp_name'], $dest)) {
                         $message = 'Impossible de déplacer le fichier';
@@ -54,12 +65,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
  </head>
 <body>
 <main class="card">
-    <h1>Imprimer un PDF</h1>
-    <p class="help">Choisissez un fichier PDF puis cliquez sur « Imprimer ». Le document sera envoyé à l’imprimante configurée.</p>
+    <h1>Imprimer un document</h1>
+    <p class="help">Choisissez un fichier (PDF, image JPEG/PNG/TIFF, texte) puis cliquez sur « Imprimer ». Le document sera envoyé à l’imprimante configurée.</p>
 
     <form method="post" enctype="multipart/form-data">
-        <label for="file">Fichier PDF</label>
-        <input id="file" name="file" type="file" accept="application/pdf" required>
+        <label for="file">Fichier</label>
+        <input id="file" name="file" type="file" accept="application/pdf,image/jpeg,image/png,image/tiff,text/plain" required>
         <div class="actions">
             <button type="submit">Imprimer</button>
         </div>
@@ -70,7 +81,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <?php endif; ?>
 
     <footer>
-        Taille max : <?= (int)($config['max_file_size_mb'] ?? 10) ?> Mo · Types : PDF
+        Taille max : <?= (int)($config['max_file_size_mb'] ?? 10) ?> Mo · Types : PDF, JPEG, PNG, TIFF, texte
     </footer>
 </main>
 </body>

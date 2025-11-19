@@ -62,12 +62,23 @@ $finfo = new finfo(FILEINFO_MIME_TYPE);
 $mime = $finfo->file($file['tmp_name']);
 $allowed = $config['allowed_mime_types'] ?? ['application/pdf'];
 if ($mime === false || !in_array($mime, $allowed, true)) {
-    jsonOut(415, ['success' => false, 'message' => 'Unsupported media type (PDF required)']);
+    jsonOut(415, ['success' => false, 'message' => 'Unsupported media type']);
     exit;
 }
 
 $tmpDir = sys_get_temp_dir();
-$tmpName = 'print_' . time() . '_' . bin2hex(random_bytes(4)) . '.pdf';
+$map = [
+    'application/pdf' => '.pdf',
+    'application/postscript' => '.ps',
+    'image/jpeg' => '.jpg',
+    'image/png' => '.png',
+    'image/tiff' => '.tiff',
+    'text/plain' => '.txt',
+    'image/pwg-raster' => '.pwg',
+    'image/urf' => '.urf',
+];
+$ext = $map[$mime] ?? '.bin';
+$tmpName = 'print_' . time() . '_' . bin2hex(random_bytes(4)) . $ext;
 $dest = $tmpDir . DIRECTORY_SEPARATOR . $tmpName;
 if (!@move_uploaded_file($file['tmp_name'], $dest)) {
     jsonOut(500, ['success' => false, 'message' => 'Failed to store temporary file']);
