@@ -1,20 +1,20 @@
-# WebPrint (Tiny PDF printing via CUPS)
+# 🖨️ WebPrint — Tiny PDF Printing via CUPS
 
-A minimal PHP project to upload and print PDF files on a local network using CUPS (`lp`). Designed for Raspberry Pi Zero (DietPi) with Apache2 and PHP 8.
+Minimal PHP app to upload and print PDFs over your local network using CUPS (`lp`). Built for Raspberry Pi Zero (DietPi) with Apache2 + PHP 8.
 
-## Prerequisites
-- Apache2 and PHP 8 installed and running
-- CUPS installed and configured
-- A working printer in CUPS (e.g., you can run: `lp -d DeskJet_3630 file.pdf`)
+## ⚙️ Prerequisites
+- 🐧 Apache2 + PHP 8 installed and running
+- 🧰 CUPS installed and configured
+- 🖨️ A working CUPS printer (e.g. `lp -d DeskJet_3630 file.pdf` works)
 
-## Configuration
-Edit `config.php` and set:
-- `printer_name`: CUPS printer name
-- `cups_server`: usually `localhost`
-- `cups_port`: usually `631`
-- `api_token`: secret token for the API (change it!)
-- `max_file_size_mb`: maximum allowed upload size (MB)
-- `allowed_mime_types`: keep as `['application/pdf']`
+## 🔧 Configuration
+- Edit `app/config.php` and set:
+  - `printer_name`: CUPS printer name
+  - `cups_server`: usually `localhost`
+  - `cups_port`: usually `631`
+  - `api_token`: secret token for the API (change it!)
+  - `max_file_size_mb`: maximum allowed upload size (MB)
+  - `allowed_mime_types`: keep as `['application/pdf']`
 
 Example:
 ```php
@@ -23,34 +23,44 @@ return [
     'cups_server'        => 'localhost',
     'cups_port'          => 631,
     'api_token'          => 'CHANGE_ME_SECRET_TOKEN',
-    'max_file_size_mb'   => 10,
+    'max_file_size_mb'   => 20,
     'allowed_mime_types' => ['application/pdf'],
 ];
 ```
 
-## Web UI
-- Access the UI at `http://<pi-host-or-ip>/index.php`
-- Upload a PDF and click “Imprimer”
-- The result message shows success or error (and job ID if available)
+## 🌐 Web UI
+- URL: `http://<pi-host-or-ip>/index`
+- Action: upload a PDF and click “Imprimer”
+- Feedback: shows success/error and job ID when available
 
-## HTTP API
-- Endpoint: `POST http://<pi-host-or-ip>/api.php`
-- Auth: `Authorization: Bearer <token>` (must match `api_token` in `config.php`)
+## 🔐 HTTP API
+- Method: `POST`
+- URL: `http://<pi-host-or-ip>/api`
+- Auth: `Authorization: Bearer <token>` (matches `api_token`)
 - Request: `multipart/form-data` with one file field named `file`
 - Response (JSON):
-  - Success: `{"success": true, "message": "Print job sent", "job_id": "123"}`
-  - Error: `{"success": false, "message": "Error description"}`
+  - ✅ Success: `{"success": true, "message": "Print job sent", "job_id": "123"}`
+  - ❌ Error: `{"success": false, "message": "Error description"}`
 
-### cURL example
+### 🧪 cURL Example
 ```bash
 curl -X POST \
   -H "Authorization: Bearer CHANGE_ME_SECRET_TOKEN" \
   -F "file=@/path/to/document.pdf" \
-  http://<pi-host-or-ip>/api.php
+  http://<pi-host-or-ip>/api
 ```
 
-## Notes
-- No database, sessions, or external dependencies
-- Strictly validates MIME type using `finfo`
-- Enforces file size limits
-- Uses `escapeshellarg()` for all `lp` arguments
+## 🚀 Enable Clean URLs
+- Ensure Apache rewrite is enabled and `.htaccess` is honored:
+  - `sudo a2enmod rewrite && sudo systemctl restart apache2`
+  - In your vhost: `AllowOverride All` for the document root
+
+## 🛡️ Security & Robustness
+- `app/` code is blocked from direct HTTP access
+- Strict MIME check with `finfo` (`application/pdf` only)
+- Max file size enforced from config
+- All `lp` arguments escaped via `escapeshellarg()`
+
+## 📝 Notes
+- No DB, no sessions, no external dependencies
+- Dark mode UI with responsive centered layout

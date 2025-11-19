@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-$config = require __DIR__ . '/config.php';
+$config = require __DIR__ . '/app/config.php';
 
 function jsonOut(int $status, array $payload): void {
     http_response_code($status);
@@ -74,7 +74,7 @@ if (!@move_uploaded_file($file['tmp_name'], $dest)) {
     exit;
 }
 
-require_once __DIR__ . '/PrinterService.php';
+require_once __DIR__ . '/app/PrinterService.php';
 $service = new PrinterService();
 $result = $service->printPdf($dest);
 @unlink($dest);

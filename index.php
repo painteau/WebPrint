@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-$config = require __DIR__ . '/config.php';
+$config = require __DIR__ . '/app/config.php';
 $message = null;
 $ok = false;
 
@@ -30,7 +30,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     if (!@move_uploaded_file($file['tmp_name'], $dest)) {
                         $message = 'Impossible de déplacer le fichier';
                     } else {
-                        require_once __DIR__ . '/PrinterService.php';
+                        require_once __DIR__ . '/app/PrinterService.php';
                         $service = new PrinterService();
                         $result = $service->printPdf($dest);
                         @unlink($dest);
@@ -49,22 +49,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta charset="utf-8">
     <title>Impression PDF</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <style>
-        body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 2rem; }
-        .box { max-width: 520px; margin: 0 auto; padding: 1rem 1.25rem; border: 1px solid #ddd; border-radius: 8px; }
-        h1 { font-size: 1.25rem; margin: 0 0 .75rem; }
-        p.help { color: #444; }
-        .result { margin-top: 1rem; padding: .75rem; border-radius: 6px; white-space: pre-wrap; }
-        .ok { background: #e6ffed; border: 1px solid #b7f5c6; color: #055b16; }
-        .err { background: #ffecec; border: 1px solid #f5b7b7; color: #7a0b0b; }
-        .actions { margin-top: .75rem; }
-        button { padding: .5rem .9rem; font-size: 1rem; }
-        input[type=file] { display: block; margin-top: .5rem; }
-        footer { margin-top: 1rem; color: #666; font-size: .9rem; }
-    </style>
+    <meta name="color-scheme" content="light dark">
+    <link rel="stylesheet" href="style.css">
  </head>
 <body>
-<div class="box">
+<main class="card">
     <h1>Imprimer un PDF</h1>
     <p class="help">Choisissez un fichier PDF puis cliquez sur « Imprimer ». Le document sera envoyé à l’imprimante configurée.</p>
 
@@ -83,6 +72,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <footer>
         Taille max : <?= (int)($config['max_file_size_mb'] ?? 10) ?> Mo · Types : PDF
     </footer>
-</div>
+</main>
 </body>
 </html>

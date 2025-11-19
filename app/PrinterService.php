@@ -1,6 +1,11 @@
 <?php
 declare(strict_types=1);
 
+if (!empty($_SERVER['SCRIPT_FILENAME']) && realpath(__FILE__) === realpath($_SERVER['SCRIPT_FILENAME'])) {
+    http_response_code(404);
+    exit;
+}
+
 /**
  * Tiny printer service to send PDFs to CUPS using `lp`.
  */

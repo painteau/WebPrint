@@ -1,0 +1,17 @@
+DirectoryIndex index.php
+Options -Indexes -MultiViews
+RewriteEngine On
+RewriteRule ^app/ - [F]
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME}.php -f
+RewriteRule ^(.+)$ $1.php [L,QSA]
+
+<Files "config.php">
+  Require all denied
+  Satisfy All
+</Files>
+<Files "PrinterService.php">
+  Require all denied
+  Satisfy All
+</Files>
