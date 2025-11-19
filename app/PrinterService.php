@@ -15,8 +15,15 @@ class PrinterService
 
     public function __construct()
     {
-        $configPath = __DIR__ . '/config.php';
-        if (!is_file($configPath)) {
+        $primary = __DIR__ . '/config.php';
+        $backup  = __DIR__ . '/config.php.example';
+        $configPath = null;
+        if (is_file($primary)) {
+            $configPath = $primary;
+        } elseif (is_file($backup)) {
+            $configPath = $backup;
+        }
+        if ($configPath === null) {
             throw new RuntimeException('Configuration file not found');
         }
         /** @var array $cfg */

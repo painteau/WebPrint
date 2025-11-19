@@ -8,6 +8,8 @@ Minimal PHP app to upload and print PDFs over your local network using CUPS (`lp
 - 🖨️ A working CUPS printer (e.g. `lp -d DeskJet_3630 file.pdf` works)
 
 ## 🔧 Configuration
+- Copy the example to a real config:
+  - `cp app/config.php.example app/config.php`
 - Edit `app/config.php` and set:
   - `printer_name`: CUPS printer name
   - `cups_server`: usually `localhost`
@@ -57,6 +59,7 @@ curl -X POST \
 
 ## 🛡️ Security & Robustness
 - `app/` code is blocked from direct HTTP access
+- `app/config.php` is git-ignored so you can safely adjust secrets on the server
 - Strict MIME check with `finfo` (`application/pdf` only)
 - Max file size enforced from config
 - All `lp` arguments escaped via `escapeshellarg()`

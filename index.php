@@ -1,7 +1,11 @@
 <?php
 declare(strict_types=1);
 
-$config = require __DIR__ . '/app/config.php';
+$configPath = __DIR__ . '/app/config.php';
+if (!is_file($configPath)) {
+    $configPath = __DIR__ . '/app/config.php.example';
+}
+$config = require $configPath;
 $message = null;
 $ok = false;
 
