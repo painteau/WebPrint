@@ -12,21 +12,35 @@ Minimal PHP app to upload and print PDFs over your local network using CUPS (`lp
   - `cp app/config.php.example app/config.php`
 - Edit `app/config.php` and set:
   - `printer_name`: CUPS printer name
+  - `printers`: optional array of printer names for UI selection
   - `cups_server`: usually `localhost`
   - `cups_port`: usually `631`
   - `api_token`: secret token for the API (change it!)
   - `max_file_size_mb`: maximum allowed upload size (MB)
-  - `allowed_mime_types`: keep as `['application/pdf']`
+  - `allowed_mime_types`: array of allowed MIME types (e.g. `['application/pdf','image/png']`)
+  - `index_password`: optional UI password; if non-empty, `/index` requires login
+  - Note: environment variables override values from this file when present
 
 Example:
 ```php
 return [
     'printer_name'       => 'DeskJet_3630',
+    'printers'           => ['DeskJet_3630', 'OfficeLaser'],
     'cups_server'        => 'localhost',
     'cups_port'          => 631,
     'api_token'          => 'CHANGE_ME_SECRET_TOKEN',
     'max_file_size_mb'   => 20,
-    'allowed_mime_types' => ['application/pdf'],
+    'allowed_mime_types' => [
+        'application/pdf',
+        'application/postscript',
+        'image/jpeg',
+        'image/png',
+        'image/tiff',
+        'text/plain',
+        'image/pwg-raster',
+        'image/urf',
+    ],
+    'index_password'     => '',
 ];
 ```
 
