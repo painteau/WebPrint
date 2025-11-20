@@ -136,8 +136,8 @@ if ($pwd !== '' && (!isset($_SESSION['index_auth']) || $_SESSION['index_auth'] !
         <form method="post">
             <input type="hidden" name="csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>">
             <button class="logout-btn" type="submit" name="logout" value="1" title="Déconnexion" aria-label="Déconnexion">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">
-                    <path d="M12 2a1 1 0 011 1v7a1 1 0 11-2 0V3a1 1 0 011-1zm0 20A9 9 0 1112 4a1 1 0 110 2 7 7 0 100 14z"/>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+                    <path d="M12 3v9m4.243-4.243a6 6 0 11-8.486 0" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
                 </svg>
             </button>
         </form>

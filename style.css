@@ -59,7 +59,7 @@ body {
 }
 
 .topbar { display: flex; justify-content: flex-end; align-items: center; margin-bottom: .5rem; }
-.logout-btn { background: var(--danger); color: var(--accent-contrast); border-radius: 10px; padding: .5rem; display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; }
+.logout-btn { background: var(--danger); color: var(--accent-contrast); border-radius: 10px; padding: 0; display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; }
 .logout-btn:hover { background: var(--danger-hover); }
 .logout-btn img, .logout-btn svg { width: 20px; height: 20px; display: block; }
 
