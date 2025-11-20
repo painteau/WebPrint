@@ -37,6 +37,10 @@ if (!is_string($csrf) || $csrf === '') {
     $csrf = $_SESSION['csrf'];
 }
 
+$allowedForAccept = $config['allowed_mime_types'] ?? ['application/pdf'];
+$allowedForAccept = array_values(array_filter(array_map('strval', $allowedForAccept), static fn($x) => preg_match('/^[a-z0-9.+-]+\/[a-z0-9.+-]+$/i', $x)));
+$acceptAttr = implode(',', $allowedForAccept);
+
 if ($pwd !== '' && (!isset($_SESSION['index_auth']) || $_SESSION['index_auth'] !== true)) {
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login_password'])) {
         $inp = (string)($_POST['login_password'] ?? '');
@@ -166,7 +170,7 @@ if ($pwd !== '' && (!isset($_SESSION['index_auth']) || $_SESSION['index_auth'] !
                 <?php endforeach; ?>
             </select>
             <label for="file">Fichier</label>
-            <input id="file" name="file" type="file" accept="application/pdf,image/jpeg,image/png,image/tiff,text/plain" required>
+            <input id="file" name="file" type="file" accept="<?= htmlspecialchars($acceptAttr, ENT_QUOTES, 'UTF-8') ?>" required>
             <div class="actions">
                 <button type="submit">Imprimer</button>
             </div>
