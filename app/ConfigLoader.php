@@ -21,6 +21,14 @@ function loadConfig(): array
     if ($v !== false && $v !== '') {
         $env['printer_name'] = (string)$v;
     }
+    $v = getenv('PRINTERS');
+    if ($v !== false && $v !== '') {
+        $parts = array_map(static fn($x) => trim((string)$x), explode(',', (string)$v));
+        $parts = array_values(array_filter($parts, static fn($x) => $x !== ''));
+        if (!empty($parts)) {
+            $env['printers'] = $parts;
+        }
+    }
     $v = getenv('CUPS_SERVER');
     if ($v !== false && $v !== '') {
         $env['cups_server'] = (string)$v;
@@ -48,4 +56,3 @@ function loadConfig(): array
 
     return array_merge($cfg, $env);
 }
-

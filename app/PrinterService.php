@@ -23,7 +23,7 @@ class PrinterService
      * Validate and print a PDF file via CUPS.
      * @return array{success:bool,message:string,job_id:?(string)}
      */
-    public function printPdf(string $filePath): array
+    public function printPdf(string $filePath, ?string $overridePrinter = null): array
     {
         if (!is_file($filePath)) {
             return ['success' => false, 'message' => 'File not found', 'job_id' => null];
@@ -50,7 +50,7 @@ class PrinterService
             return ['success' => false, 'message' => 'Invalid MIME type', 'job_id' => null];
         }
 
-        $printer = (string)($this->config['printer_name'] ?? '');
+        $printer = $overridePrinter !== null ? (string)$overridePrinter : (string)($this->config['printer_name'] ?? '');
         $host    = (string)($this->config['cups_server'] ?? 'localhost');
         $port    = (int)($this->config['cups_port'] ?? 631);
         if ($printer === '') {

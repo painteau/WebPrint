@@ -85,9 +85,11 @@ curl -X POST \
 - Linux/macOS:
   - `docker run -d --name webprint -p 8081:80 --restart unless-stopped ghcr.io/painteau/webprint:latest`
   - With env: `docker run -d --name webprint -p 8081:80 --restart unless-stopped -e PRINTER_NAME=DeskJet_3630 -e CUPS_SERVER=host.docker.internal -e CUPS_PORT=631 -e API_TOKEN=CHANGE_ME_SECRET_TOKEN -e MAX_FILE_SIZE_MB=20 -e ALLOWED_MIME_TYPES=application/pdf ghcr.io/painteau/webprint:latest`
+  - Multiple printers: `docker run -d --name webprint -p 8081:80 --restart unless-stopped -e PRINTERS=DeskJet_3630,OfficeLaser -e CUPS_SERVER=host.docker.internal -e CUPS_PORT=631 -e API_TOKEN=CHANGE_ME_SECRET_TOKEN ghcr.io/painteau/webprint:latest`
 - Windows PowerShell:
   - `docker run -d --name webprint -p 8081:80 --restart unless-stopped ghcr.io/painteau/webprint:latest`
   - With env: `docker run -d --name webprint -p 8081:80 --restart unless-stopped -e PRINTER_NAME=DeskJet_3630 -e CUPS_SERVER=host.docker.internal -e CUPS_PORT=631 -e API_TOKEN=CHANGE_ME_SECRET_TOKEN -e MAX_FILE_SIZE_MB=20 -e ALLOWED_MIME_TYPES=application/pdf ghcr.io/painteau/webprint:latest`
+  - Multiple printers: `docker run -d --name webprint -p 8081:80 --restart unless-stopped -e PRINTERS=DeskJet_3630,OfficeLaser -e CUPS_SERVER=host.docker.internal -e CUPS_PORT=631 -e API_TOKEN=CHANGE_ME_SECRET_TOKEN ghcr.io/painteau/webprint:latest`
 - Mount local config instead of env:
   - Linux/macOS: `-v /path/to/config.php:/var/www/html/app/config.php:ro`
   - Windows PowerShell: `-v ${PWD}\app\config.php:/var/www/html/app/config.php:ro`
@@ -95,6 +97,9 @@ curl -X POST \
 ### Configure CUPS Host
 - Docker Desktop: use `CUPS_SERVER=host.docker.internal`.
 - Linux: use your host IP (ex: `192.168.x.x`). Ensure CUPS listens on the interface and port `631`.
+
+### Multiple Printers in UI
+- If `printers` or `PRINTERS` defines multiple names, the web UI shows a selector and sends the job to the chosen printer.
 
 ### Tags
 - `latest`: pushed on `main`.
