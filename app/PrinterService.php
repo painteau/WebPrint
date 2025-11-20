@@ -15,20 +15,8 @@ class PrinterService
 
     public function __construct()
     {
-        $primary = __DIR__ . '/config.php';
-        $backup  = __DIR__ . '/config.php.example';
-        $configPath = null;
-        if (is_file($primary)) {
-            $configPath = $primary;
-        } elseif (is_file($backup)) {
-            $configPath = $backup;
-        }
-        if ($configPath === null) {
-            throw new RuntimeException('Configuration file not found');
-        }
-        /** @var array $cfg */
-        $cfg = require $configPath;
-        $this->config = $cfg;
+        require_once __DIR__ . '/ConfigLoader.php';
+        $this->config = loadConfig();
     }
 
     /**
