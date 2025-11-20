@@ -54,6 +54,9 @@ if (isset($_POST['printer'])) {
     $p = (string)$_POST['printer'];
     if ($p !== '' && in_array($p, $printers, true)) {
         $selectedPrinter = $p;
+    } else {
+        jsonOut(400, ['success' => false, 'message' => 'Unknown printer']);
+        exit;
     }
 }
 if ($selectedPrinter === '') {

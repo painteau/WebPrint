@@ -26,11 +26,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $p = (string)$_POST['printer'];
         if ($p !== '' && in_array($p, $printers, true)) {
             $selectedPrinter = $p;
+        } else {
+            $message = 'Imprimante invalide';
         }
     }
-    if (!isset($_FILES['file'])) {
+    if ($message === null && !isset($_FILES['file'])) {
         $message = 'Aucun fichier reçu';
-    } else {
+    } elseif ($message === null) {
         $file = $_FILES['file'];
         if (($file['error'] ?? UPLOAD_ERR_OK) !== UPLOAD_ERR_OK) {
             $message = 'Erreur de téléchargement';
