@@ -56,6 +56,14 @@ if ($pwd !== '' && (!isset($_SESSION['index_auth']) || $_SESSION['index_auth'] !
     if ($postCsrf === '' || !hash_equals($csrf, $postCsrf)) {
         $message = 'Requête invalide';
     }
+    if ($message === null && isset($_POST['logout'])) {
+        $_SESSION = [];
+        if (session_id() !== '') {
+            session_destroy();
+        }
+        header('Location: index');
+        exit;
+    }
     if (isset($_POST['printer'])) {
         $p = (string)$_POST['printer'];
         if ($p !== '' && in_array($p, $printers, true)) {
@@ -137,6 +145,12 @@ if ($pwd !== '' && (!isset($_SESSION['index_auth']) || $_SESSION['index_auth'] !
     <?php else: ?>
         <h1>Imprimer un document</h1>
         <p class="help">Choisissez un fichier (PDF, image JPEG/PNG/TIFF, texte) puis cliquez sur « Imprimer ». Le document sera envoyé à l’imprimante configurée.</p>
+        <form method="post">
+            <input type="hidden" name="csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>">
+            <div class="actions">
+                <button type="submit" name="logout" value="1">Se déconnecter</button>
+            </div>
+        </form>
         <form method="post" enctype="multipart/form-data">
             <input type="hidden" name="csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>">
             <label for="printer">Imprimante</label>
