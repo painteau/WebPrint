@@ -131,6 +131,18 @@ if ($pwd !== '' && (!isset($_SESSION['index_auth']) || $_SESSION['index_auth'] !
  </head>
 <body>
 <main class="card">
+    <?php if ($pwd !== '' && (isset($_SESSION['index_auth']) && $_SESSION['index_auth'] === true)): ?>
+    <div class="topbar">
+        <form method="post">
+            <input type="hidden" name="csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>">
+            <button class="logout-btn" type="submit" name="logout" value="1" title="Déconnexion" aria-label="Déconnexion">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">
+                    <path d="M12 2a1 1 0 011 1v7a1 1 0 11-2 0V3a1 1 0 011-1zm0 20A9 9 0 1112 4a1 1 0 110 2 7 7 0 100 14z"/>
+                </svg>
+            </button>
+        </form>
+    </div>
+    <?php endif; ?>
     <?php if ($pwd !== '' && (!isset($_SESSION['index_auth']) || $_SESSION['index_auth'] !== true)): ?>
         <h1>Authentification requise</h1>
         <p class="help">Entrez le mot de passe pour accéder à l’interface d’impression.</p>
@@ -145,12 +157,6 @@ if ($pwd !== '' && (!isset($_SESSION['index_auth']) || $_SESSION['index_auth'] !
     <?php else: ?>
         <h1>Imprimer un document</h1>
         <p class="help">Choisissez un fichier (PDF, image JPEG/PNG/TIFF, texte) puis cliquez sur « Imprimer ». Le document sera envoyé à l’imprimante configurée.</p>
-        <form method="post">
-            <input type="hidden" name="csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>">
-            <div class="actions">
-                <button type="submit" name="logout" value="1">Se déconnecter</button>
-            </div>
-        </form>
         <form method="post" enctype="multipart/form-data">
             <input type="hidden" name="csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>">
             <label for="printer">Imprimante</label>
@@ -177,6 +183,7 @@ if ($pwd !== '' && (!isset($_SESSION['index_auth']) || $_SESSION['index_auth'] !
         <?php else: ?>
             Imprimante : <?= htmlspecialchars($selectedPrinter, ENT_QUOTES, 'UTF-8') ?> · Taille max : <?= (int)($config['max_file_size_mb'] ?? 10) ?> Mo · Types : PDF, JPEG, PNG, TIFF, texte
         <?php endif; ?>
+        <div class="footer-meta">WebPrint — créé par Painteau · <a href="https://github.com/painteau/WebPrint" target="_blank" rel="noopener noreferrer">Projet GitHub</a> · <a href="LICENSE" target="_blank" rel="noopener noreferrer">License</a></div>
     </footer>
 </main>
 </body>

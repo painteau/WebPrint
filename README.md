@@ -131,3 +131,7 @@ curl -X POST \
 ### Tags
 - `latest`: pushed on `main`.
 - Branch/tag/sha tags are also published (e.g. `main`, `v1.0.0`, `sha-<short>`).
+
+## License
+- MIT License. See [`LICENSE`](LICENSE).
+- WebPrint — créé par Painteau. Contribuez sur GitHub: https://github.com/painteau/WebPrint

@@ -7,6 +7,8 @@
   --border: #e2e8f0;
   --accent: #2563eb;
   --accent-contrast: #ffffff;
+  --danger: #dc2626;
+  --danger-hover: #b91c1c;
   --ok-bg: #e6ffed;
   --ok-border: #b7f5c6;
   --ok-text: #055b16;
@@ -24,6 +26,8 @@
     --border: #1f2937;
     --accent: #3b82f6;
     --accent-contrast: #ffffff;
+    --danger: #ef4444;
+    --danger-hover: #dc2626;
     --ok-bg: #0f3f1a;
     --ok-border: #176836;
     --ok-text: #86efac;
@@ -54,11 +58,19 @@ body {
   box-shadow: 0 10px 25px rgba(0,0,0,0.08);
 }
 
+.topbar { display: flex; justify-content: flex-end; align-items: center; margin-bottom: .5rem; }
+.logout-btn { background: var(--danger); color: var(--accent-contrast); border-radius: 10px; padding: .5rem; display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; }
+.logout-btn:hover { background: var(--danger-hover); }
+.logout-btn img, .logout-btn svg { width: 20px; height: 20px; display: block; }
+
 h1 { margin: 0 0 .75rem; font-size: 1.35rem; }
 .help { color: var(--muted); margin: 0 0 1rem; }
 
 label { font-weight: 600; display: block; margin-bottom: .5rem; }
-input[type=file] { display: block; width: 100%; }
+input[type=file], input[type=password], input[type=text], select { display: block; width: 100%; box-sizing: border-box; border: 1px solid var(--border); background: var(--card-bg); color: var(--text); border-radius: 10px; padding: .6rem .8rem; font-size: 1rem; }
+select { appearance: none; background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%); background-position: calc(100% - 14px) calc(1rem - 2px), calc(100% - 9px) calc(1rem - 2px); background-size: 5px 5px, 5px 5px; background-repeat: no-repeat; }
+input[type=file] { padding: .4rem; }
+input:focus, select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37,99,235,0.25); }
 
 .actions { margin-top: .9rem; display: flex; justify-content: center; }
 button {
@@ -75,4 +87,5 @@ button:active { transform: translateY(1px); }
 .result.err { background: var(--err-bg); border: 1px solid var(--err-border); color: var(--err-text); }
 
 footer { margin-top: 1rem; color: var(--muted); font-size: .95rem; text-align: center; }
+.footer-meta { margin-top: .5rem; color: var(--muted); font-size: .9rem; }
 
