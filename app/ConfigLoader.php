@@ -19,12 +19,15 @@ function loadConfig(): array
     $env = [];
     $v = getenv('PRINTER_NAME');
     if ($v !== false && $v !== '') {
-        $env['printer_name'] = (string)$v;
+        $n = trim((string)$v);
+        if (preg_match('/^[A-Za-z0-9._-]+$/', $n)) {
+            $env['printer_name'] = $n;
+        }
     }
     $v = getenv('PRINTERS');
     if ($v !== false && $v !== '') {
         $parts = array_map(static fn($x) => trim((string)$x), explode(',', (string)$v));
-        $parts = array_values(array_filter($parts, static fn($x) => $x !== ''));
+        $parts = array_values(array_filter($parts, static fn($x) => $x !== '' && preg_match('/^[A-Za-z0-9._-]+$/', $x)));
         if (!empty($parts)) {
             $env['printers'] = $parts;
         }
@@ -39,7 +42,7 @@ function loadConfig(): array
     }
     $v = getenv('API_TOKEN');
     if ($v !== false && $v !== '') {
-        $env['api_token'] = (string)$v;
+        $env['api_token'] = trim((string)$v);
     }
     $v = getenv('MAX_FILE_SIZE_MB');
     if ($v !== false && $v !== '' && ctype_digit((string)$v)) {
@@ -48,10 +51,15 @@ function loadConfig(): array
     $v = getenv('ALLOWED_MIME_TYPES');
     if ($v !== false && $v !== '') {
         $parts = array_map(static fn($x) => trim((string)$x), explode(',', (string)$v));
-        $parts = array_values(array_filter($parts, static fn($x) => $x !== ''));
+        $parts = array_values(array_filter($parts, static fn($x) => $x !== '' && preg_match('/^[a-z0-9.+-]+\/[a-z0-9.+-]+$/i', $x)));
         if (!empty($parts)) {
             $env['allowed_mime_types'] = $parts;
         }
+    }
+
+    $v = getenv('INDEX_PASSWORD');
+    if ($v !== false && $v !== '') {
+        $env['index_password'] = (string)$v;
     }
 
     return array_merge($cfg, $env);

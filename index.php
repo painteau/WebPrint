@@ -3,6 +3,16 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/app/ConfigLoader.php';
 $config = loadConfig();
+$isHttps = ((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || (isset($_SERVER['SERVER_PORT']) && (string)$_SERVER['SERVER_PORT'] === '443'));
+if (PHP_SESSION_ACTIVE !== session_status()) {
+    session_set_cookie_params(['lifetime' => 0, 'path' => '/', 'secure' => $isHttps, 'httponly' => true, 'samesite' => 'Lax']);
+    session_start();
+}
+header('X-Frame-Options: DENY');
+header('X-Content-Type-Options: nosniff');
+header('Referrer-Policy: no-referrer');
+header("Content-Security-Policy: default-src 'self'");
+$pwd = (string)($config['index_password'] ?? '');
 $message = null;
 $ok = false;
 $printers = [];
@@ -21,7 +31,31 @@ if (!empty($printers) && !in_array($selectedPrinter, $printers, true)) {
     $selectedPrinter = (string)$printers[0];
 }
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+$csrf = $_SESSION['csrf'] ?? null;
+if (!is_string($csrf) || $csrf === '') {
+    $_SESSION['csrf'] = bin2hex(random_bytes(16));
+    $csrf = $_SESSION['csrf'];
+}
+
+if ($pwd !== '' && (!isset($_SESSION['index_auth']) || $_SESSION['index_auth'] !== true)) {
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login_password'])) {
+        $inp = (string)($_POST['login_password'] ?? '');
+        $postCsrf = (string)($_POST['csrf'] ?? '');
+        if ($postCsrf === '' || !hash_equals($csrf, $postCsrf)) {
+            $message = 'Requête invalide';
+        } elseif ($inp !== '' && hash_equals($pwd, $inp)) {
+            $_SESSION['index_auth'] = true;
+            header('Location: index');
+            exit;
+        } else {
+            $message = 'Mot de passe invalide';
+        }
+    }
+} elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $postCsrf = (string)($_POST['csrf'] ?? '');
+    if ($postCsrf === '' || !hash_equals($csrf, $postCsrf)) {
+        $message = 'Requête invalide';
+    }
     if (isset($_POST['printer'])) {
         $p = (string)$_POST['printer'];
         if ($p !== '' && in_array($p, $printers, true)) {
@@ -62,7 +96,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $ext = $map[$mime] ?? '.bin';
                     $tmpName = 'print_' . time() . '_' . bin2hex(random_bytes(4)) . $ext;
                     $dest = $tmpDir . DIRECTORY_SEPARATOR . $tmpName;
-                    if (!@move_uploaded_file($file['tmp_name'], $dest)) {
+                    if (!is_uploaded_file($file['tmp_name']) || !@move_uploaded_file($file['tmp_name'], $dest)) {
                         $message = 'Impossible de déplacer le fichier';
                     } else {
                         require_once __DIR__ . '/app/PrinterService.php';
@@ -89,29 +123,46 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
  </head>
 <body>
 <main class="card">
-    <h1>Imprimer un document</h1>
-    <p class="help">Choisissez un fichier (PDF, image JPEG/PNG/TIFF, texte) puis cliquez sur « Imprimer ». Le document sera envoyé à l’imprimante configurée.</p>
-
-    <form method="post" enctype="multipart/form-data">
-        <label for="printer">Imprimante</label>
-        <select id="printer" name="printer" required>
-            <?php foreach ($printers as $p): ?>
-                <option value="<?= htmlspecialchars($p, ENT_QUOTES, 'UTF-8') ?>" <?= $p === $selectedPrinter ? 'selected' : '' ?>><?= htmlspecialchars($p, ENT_QUOTES, 'UTF-8') ?></option>
-            <?php endforeach; ?>
-        </select>
-        <label for="file">Fichier</label>
-        <input id="file" name="file" type="file" accept="application/pdf,image/jpeg,image/png,image/tiff,text/plain" required>
-        <div class="actions">
-            <button type="submit">Imprimer</button>
-        </div>
-    </form>
+    <?php if ($pwd !== '' && (!isset($_SESSION['index_auth']) || $_SESSION['index_auth'] !== true)): ?>
+        <h1>Authentification requise</h1>
+        <p class="help">Entrez le mot de passe pour accéder à l’interface d’impression.</p>
+        <form method="post">
+            <input type="hidden" name="csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>">
+            <label for="login_password">Mot de passe</label>
+            <input id="login_password" name="login_password" type="password" required>
+            <div class="actions">
+                <button type="submit">Se connecter</button>
+            </div>
+        </form>
+    <?php else: ?>
+        <h1>Imprimer un document</h1>
+        <p class="help">Choisissez un fichier (PDF, image JPEG/PNG/TIFF, texte) puis cliquez sur « Imprimer ». Le document sera envoyé à l’imprimante configurée.</p>
+        <form method="post" enctype="multipart/form-data">
+            <input type="hidden" name="csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>">
+            <label for="printer">Imprimante</label>
+            <select id="printer" name="printer" required>
+                <?php foreach ($printers as $p): ?>
+                    <option value="<?= htmlspecialchars($p, ENT_QUOTES, 'UTF-8') ?>" <?= $p === $selectedPrinter ? 'selected' : '' ?>><?= htmlspecialchars($p, ENT_QUOTES, 'UTF-8') ?></option>
+                <?php endforeach; ?>
+            </select>
+            <label for="file">Fichier</label>
+            <input id="file" name="file" type="file" accept="application/pdf,image/jpeg,image/png,image/tiff,text/plain" required>
+            <div class="actions">
+                <button type="submit">Imprimer</button>
+            </div>
+        </form>
+    <?php endif; ?>
 
     <?php if ($message !== null): ?>
         <div class="result <?= $ok ? 'ok' : 'err' ?>"><?= htmlspecialchars($message, ENT_QUOTES, 'UTF-8') ?></div>
     <?php endif; ?>
 
     <footer>
-        Imprimante : <?= htmlspecialchars($selectedPrinter, ENT_QUOTES, 'UTF-8') ?> · Taille max : <?= (int)($config['max_file_size_mb'] ?? 10) ?> Mo · Types : PDF, JPEG, PNG, TIFF, texte
+        <?php if ($pwd !== '' && (!isset($_SESSION['index_auth']) || $_SESSION['index_auth'] !== true)): ?>
+            Accès protégé · Entrez le mot de passe
+        <?php else: ?>
+            Imprimante : <?= htmlspecialchars($selectedPrinter, ENT_QUOTES, 'UTF-8') ?> · Taille max : <?= (int)($config['max_file_size_mb'] ?? 10) ?> Mo · Types : PDF, JPEG, PNG, TIFF, texte
+        <?php endif; ?>
     </footer>
 </main>
 </body>

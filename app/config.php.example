@@ -25,4 +25,5 @@ return [
         'image/pwg-raster',
         'image/urf',
     ],
+    'index_password'     => '',
 ];

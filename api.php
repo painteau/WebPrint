@@ -2,6 +2,11 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/app/ConfigLoader.php';
+$isHttps = ((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || (isset($_SERVER['SERVER_PORT']) && (string)$_SERVER['SERVER_PORT'] === '443'));
+header('X-Frame-Options: DENY');
+header('X-Content-Type-Options: nosniff');
+header('Referrer-Policy: no-referrer');
+header("Content-Security-Policy: default-src 'none'");
 $config = loadConfig();
 
 function jsonOut(int $status, array $payload): void {
@@ -52,7 +57,7 @@ if (empty($printers) && $defaultPrinter !== '') {
 $selectedPrinter = $defaultPrinter;
 if (isset($_POST['printer'])) {
     $p = (string)$_POST['printer'];
-    if ($p !== '' && in_array($p, $printers, true)) {
+    if ($p !== '' && preg_match('/^[A-Za-z0-9._-]+$/', $p) && in_array($p, $printers, true)) {
         $selectedPrinter = $p;
     } else {
         jsonOut(400, ['success' => false, 'message' => 'Unknown printer']);
@@ -104,7 +109,7 @@ $map = [
 $ext = $map[$mime] ?? '.bin';
 $tmpName = 'print_' . time() . '_' . bin2hex(random_bytes(4)) . $ext;
 $dest = $tmpDir . DIRECTORY_SEPARATOR . $tmpName;
-if (!@move_uploaded_file($file['tmp_name'], $dest)) {
+if (!is_uploaded_file($file['tmp_name']) || !@move_uploaded_file($file['tmp_name'], $dest)) {
     jsonOut(500, ['success' => false, 'message' => 'Failed to store temporary file']);
     exit;
 }

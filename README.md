@@ -81,6 +81,7 @@ curl -X POST \
 - `API_TOKEN`: token for HTTP API auth
 - `MAX_FILE_SIZE_MB`: max upload size in MB (default `20`)
 - `ALLOWED_MIME_TYPES`: comma-separated list (ex: `application/pdf,image/png`)
+- `INDEX_PASSWORD`: protect Web UI (`/index`) with a password prompt
 - Precedence: env overrides values from `app/config.php` (if present) or `app/config.php.example`.
 
 ### Run Examples
@@ -92,6 +93,7 @@ curl -X POST \
   - `docker run -d --name webprint -p 8081:80 --restart unless-stopped ghcr.io/painteau/webprint:latest`
   - With env: `docker run -d --name webprint -p 8081:80 --restart unless-stopped -e PRINTER_NAME=DeskJet_3630 -e CUPS_SERVER=host.docker.internal -e CUPS_PORT=631 -e API_TOKEN=CHANGE_ME_SECRET_TOKEN -e MAX_FILE_SIZE_MB=20 -e ALLOWED_MIME_TYPES=application/pdf ghcr.io/painteau/webprint:latest`
   - Multiple printers: `docker run -d --name webprint -p 8081:80 --restart unless-stopped -e PRINTERS=DeskJet_3630,OfficeLaser -e CUPS_SERVER=host.docker.internal -e CUPS_PORT=631 -e API_TOKEN=CHANGE_ME_SECRET_TOKEN ghcr.io/painteau/webprint:latest`
+  - Protect UI: `docker run -d --name webprint -p 8081:80 --restart unless-stopped -e INDEX_PASSWORD=MySecret ghcr.io/painteau/webprint:latest`
 - Mount local config instead of env:
   - Linux/macOS: `-v /path/to/config.php:/var/www/html/app/config.php:ro`
   - Windows PowerShell: `-v ${PWD}\app\config.php:/var/www/html/app/config.php:ro`
