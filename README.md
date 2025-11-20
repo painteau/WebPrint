@@ -40,6 +40,7 @@ return [
 - URL: `http://<pi-host-or-ip>/api`
 - Auth: `Authorization: Bearer <token>` (matches `api_token`)
 - Request: `multipart/form-data` with one file field named `file`
+- Optional: `printer` field to target a specific printer from config/env
 - Response (JSON):
   - ✅ Success: `{"success": true, "message": "Print job sent", "job_id": "123"}`
   - ❌ Error: `{"success": false, "message": "Error description"}`
@@ -48,6 +49,7 @@ return [
 ```bash
 curl -X POST \
   -H "Authorization: Bearer CHANGE_ME_SECRET_TOKEN" \
+  -F "printer=DeskJet_3630" \
   -F "file=@/path/to/document.pdf" \
   http://<pi-host-or-ip>/api
 ```

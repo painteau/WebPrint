@@ -41,6 +41,26 @@ if (!hash_equals((string)$config['api_token'], $token)) {
     exit;
 }
 
+$printers = [];
+$defaultPrinter = (string)($config['printer_name'] ?? '');
+if (isset($config['printers']) && is_array($config['printers'])) {
+    $printers = array_values(array_filter(array_map('strval', $config['printers']), static fn($p) => $p !== ''));
+}
+if (empty($printers) && $defaultPrinter !== '') {
+    $printers = [$defaultPrinter];
+}
+$selectedPrinter = $defaultPrinter;
+if (isset($_POST['printer'])) {
+    $p = (string)$_POST['printer'];
+    if ($p !== '' && in_array($p, $printers, true)) {
+        $selectedPrinter = $p;
+    }
+}
+if ($selectedPrinter === '') {
+    jsonOut(400, ['success' => false, 'message' => 'Printer not configured']);
+    exit;
+}
+
 if (!isset($_FILES['file'])) {
     jsonOut(400, ['success' => false, 'message' => 'No file uploaded']);
     exit;
@@ -88,7 +108,7 @@ if (!@move_uploaded_file($file['tmp_name'], $dest)) {
 
 require_once __DIR__ . '/app/PrinterService.php';
 $service = new PrinterService();
-$result = $service->printPdf($dest);
+$result = $service->printPdf($dest, $selectedPrinter);
 @unlink($dest);
 
 if (!$result['success']) {
