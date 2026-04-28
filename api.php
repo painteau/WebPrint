@@ -74,50 +74,26 @@ if (!isset($_FILES['file'])) {
     exit;
 }
 
-$file = $_FILES['file'];
-if (($file['error'] ?? UPLOAD_ERR_OK) !== UPLOAD_ERR_OK) {
-    jsonOut(400, ['success' => false, 'message' => 'Upload error']);
+require_once __DIR__ . '/app/UploadHandler.php';
+$upload = handleUpload($_FILES['file'], $config);
+if (!$upload['ok']) {
+    $httpStatus = match($upload['error']) {
+        'Upload error'           => 400,
+        'File too large'         => 413,
+        'Unsupported media type' => 415,
+        default                  => 500,
+    };
+    jsonOut($httpStatus, ['success' => false, 'message' => $upload['error']]);
     exit;
 }
-
-$maxMb = (int)($config['max_file_size_mb'] ?? 10);
-$maxBytes = $maxMb * 1024 * 1024;
-if (($file['size'] ?? 0) > $maxBytes) {
-    jsonOut(413, ['success' => false, 'message' => 'File too large']);
-    exit;
-}
-
-$finfo = new finfo(FILEINFO_MIME_TYPE);
-$mime = $finfo->file($file['tmp_name']);
-$allowed = $config['allowed_mime_types'] ?? ['application/pdf'];
-if ($mime === false || !in_array($mime, $allowed, true)) {
-    jsonOut(415, ['success' => false, 'message' => 'Unsupported media type']);
-    exit;
-}
-
-$tmpDir = sys_get_temp_dir();
-$map = [
-    'application/pdf' => '.pdf',
-    'application/postscript' => '.ps',
-    'image/jpeg' => '.jpg',
-    'image/png' => '.png',
-    'image/tiff' => '.tiff',
-    'text/plain' => '.txt',
-    'image/pwg-raster' => '.pwg',
-    'image/urf' => '.urf',
-];
-$ext = $map[$mime] ?? '.bin';
-$tmpName = 'print_' . time() . '_' . bin2hex(random_bytes(4)) . $ext;
-$dest = $tmpDir . DIRECTORY_SEPARATOR . $tmpName;
-if (!is_uploaded_file($file['tmp_name']) || !@move_uploaded_file($file['tmp_name'], $dest)) {
-    jsonOut(500, ['success' => false, 'message' => 'Failed to store temporary file']);
-    exit;
-}
+$dest = $upload['path'];
 
 require_once __DIR__ . '/app/PrinterService.php';
 $service = new PrinterService();
 $result = $service->printPdf($dest, $selectedPrinter);
-@unlink($dest);
+if (!@unlink($dest)) {
+    error_log('WebPrint: failed to delete tmp file ' . $dest);
+}
 
 if (!$result['success']) {
     jsonOut(502, ['success' => false, 'message' => $result['message']]);

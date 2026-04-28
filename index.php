@@ -45,13 +45,24 @@ if ($pwd !== '' && (!isset($_SESSION['index_auth']) || $_SESSION['index_auth'] !
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login_password'])) {
         $inp = (string)($_POST['login_password'] ?? '');
         $postCsrf = (string)($_POST['csrf'] ?? '');
-        if ($postCsrf === '' || !hash_equals($csrf, $postCsrf)) {
+        $attempts = (int)($_SESSION['login_attempts'] ?? 0);
+        $lockUntil = (int)($_SESSION['login_lock_until'] ?? 0);
+        if ($lockUntil > time()) {
+            $message = 'Trop de tentatives. Réessayez dans ' . ceil(($lockUntil - time()) / 60) . ' min.';
+        } elseif ($postCsrf === '' || !hash_equals($csrf, $postCsrf)) {
             $message = 'Requête invalide';
-        } elseif ($inp !== '' && hash_equals($pwd, $inp)) {
+        } elseif ($inp !== '' && (str_starts_with($pwd, '$2y$') ? password_verify($inp, $pwd) : hash_equals($pwd, $inp))) {
             $_SESSION['index_auth'] = true;
+            $_SESSION['login_attempts'] = 0;
             header('Location: index');
             exit;
         } else {
+            $attempts++;
+            $_SESSION['login_attempts'] = $attempts;
+            if ($attempts >= 5) {
+                $_SESSION['login_lock_until'] = time() + 300;
+                $_SESSION['login_attempts'] = 0;
+            }
             $message = 'Mot de passe invalide';
         }
     }
@@ -79,47 +90,20 @@ if ($pwd !== '' && (!isset($_SESSION['index_auth']) || $_SESSION['index_auth'] !
     if ($message === null && !isset($_FILES['file'])) {
         $message = 'Aucun fichier reçu';
     } elseif ($message === null) {
-        $file = $_FILES['file'];
-        if (($file['error'] ?? UPLOAD_ERR_OK) !== UPLOAD_ERR_OK) {
-            $message = 'Erreur de téléchargement';
+        require_once __DIR__ . '/app/UploadHandler.php';
+        $upload = handleUpload($_FILES['file'], $config);
+        if (!$upload['ok']) {
+            $message = $upload['error'];
         } else {
-            $maxMb = (int)($config['max_file_size_mb'] ?? 10);
-            $maxBytes = $maxMb * 1024 * 1024;
-            if (($file['size'] ?? 0) > $maxBytes) {
-                $message = 'Fichier trop volumineux';
-            } else {
-                $finfo = new finfo(FILEINFO_MIME_TYPE);
-                $mime = $finfo->file($file['tmp_name']);
-                $allowed = $config['allowed_mime_types'] ?? ['application/pdf'];
-                if ($mime === false || !in_array($mime, $allowed, true)) {
-                    $message = 'Type de fichier invalide';
-                } else {
-                    $tmpDir = sys_get_temp_dir();
-                    $map = [
-                        'application/pdf' => '.pdf',
-                        'application/postscript' => '.ps',
-                        'image/jpeg' => '.jpg',
-                        'image/png' => '.png',
-                        'image/tiff' => '.tiff',
-                        'text/plain' => '.txt',
-                        'image/pwg-raster' => '.pwg',
-                        'image/urf' => '.urf',
-                    ];
-                    $ext = $map[$mime] ?? '.bin';
-                    $tmpName = 'print_' . time() . '_' . bin2hex(random_bytes(4)) . $ext;
-                    $dest = $tmpDir . DIRECTORY_SEPARATOR . $tmpName;
-                    if (!is_uploaded_file($file['tmp_name']) || !@move_uploaded_file($file['tmp_name'], $dest)) {
-                        $message = 'Impossible de déplacer le fichier';
-                    } else {
-                        require_once __DIR__ . '/app/PrinterService.php';
-                        $service = new PrinterService();
-                        $result = $service->printPdf($dest, $selectedPrinter);
-                        @unlink($dest);
-                        $ok = (bool)$result['success'];
-                        $message = $result['message'] . ($result['job_id'] ? ' (ID: ' . $result['job_id'] . ')' : '');
-                    }
-                }
+            $dest = $upload['path'];
+            require_once __DIR__ . '/app/PrinterService.php';
+            $service = new PrinterService();
+            $result = $service->printPdf($dest, $selectedPrinter);
+            if (!@unlink($dest)) {
+                error_log('WebPrint: failed to delete tmp file ' . $dest);
             }
+            $ok = (bool)$result['success'];
+            $message = $result['message'] . ($result['job_id'] ? ' (ID: ' . $result['job_id'] . ')' : '');
         }
     }
 }

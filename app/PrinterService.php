@@ -68,7 +68,7 @@ class PrinterService
 
         $outputLines = [];
         $exitCode = 0;
-        @exec($cmd, $outputLines, $exitCode);
+        exec($cmd, $outputLines, $exitCode);
         $output = trim(implode("\n", $outputLines));
 
         if ($exitCode !== 0) {
@@ -83,6 +83,8 @@ class PrinterService
                 $jobIdNum = $m[1];
             }
         }
+
+        error_log(sprintf('WebPrint: job sent to %s, file=%s, job_id=%s', $printer, basename($filePath), $jobIdNum ?? 'unknown'));
 
         return [
             'success' => true,

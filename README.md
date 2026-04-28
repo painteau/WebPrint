@@ -18,7 +18,7 @@ Minimal PHP app to upload and print PDFs over your local network using CUPS (`lp
   - `api_token`: secret token for the API (change it!)
   - `max_file_size_mb`: maximum allowed upload size (MB)
   - `allowed_mime_types`: array of allowed MIME types (e.g. `['application/pdf','image/png']`)
-  - `index_password`: optional UI password; if non-empty, `/index` requires login
+  - `index_password`: optional UI password (plain text or bcrypt hash — see below); if non-empty, `/index` requires login
   - Note: environment variables override values from this file when present
 
 Example:
@@ -40,7 +40,7 @@ return [
         'image/pwg-raster',
         'image/urf',
     ],
-    'index_password'     => '',
+    'index_password'     => '',   // plain text or bcrypt hash
 ];
 ```
 
@@ -70,9 +70,17 @@ curl -X POST \
 ```
 
 ## 🚀 Enable Clean URLs
-- Ensure Apache rewrite is enabled and `.htaccess` is honored:
-  - `sudo a2enmod rewrite && sudo systemctl restart apache2`
-  - In your vhost: `AllowOverride All` for the document root
+- **Docker**: handled automatically — `a2enmod rewrite` is run in the Dockerfile.
+- **Manual install**: enable Apache rewrite and allow `.htaccess` override:
+  ```bash
+  sudo a2enmod rewrite && sudo systemctl restart apache2
+  ```
+  In your vhost config:
+  ```apache
+  <Directory /var/www/html>
+      AllowOverride All
+  </Directory>
+  ```
 
 ## 🛡️ Security & Robustness
 - `app/` code is blocked from direct HTTP access
@@ -80,8 +88,16 @@ curl -X POST \
 - Strict MIME check with `finfo` (default `application/pdf`)
 - Max file size enforced from config
 - All `lp` arguments escaped via `escapeshellarg()`
+- `CUPS_SERVER` validated as hostname or IP — arbitrary injection rejected
+- Temp files cleaned up after each job; failures logged via `error_log`
+- Print jobs logged (printer name, job ID) via `error_log`
 - Web UI security:
   - Optional password via `INDEX_PASSWORD` (session-based)
+  - Password accepts plain text or bcrypt hash — generate with:
+    ```bash
+    php -r "echo password_hash('mypassword', PASSWORD_BCRYPT);"
+    ```
+  - Login rate-limited: 5 failed attempts trigger a 5-minute lockout
   - CSRF tokens on login and print forms
   - Security headers (CSP, nosniff, frame deny)
 
@@ -101,7 +117,7 @@ curl -X POST \
 - `API_TOKEN`: token for HTTP API auth
 - `MAX_FILE_SIZE_MB`: max upload size in MB (default `20`)
 - `ALLOWED_MIME_TYPES`: comma-separated list (ex: `application/pdf,image/png`)
-- `INDEX_PASSWORD`: protect Web UI (`/index`) with a password prompt
+- `INDEX_PASSWORD`: protect Web UI (`/index`) with a password prompt (plain text or bcrypt hash)
 - Precedence: env overrides values from `app/config.php` (if present) or `app/config.php.example`.
 - Validation: printer names use `[A-Za-z0-9._-]`; MIME types must be `type/subtype`.
 

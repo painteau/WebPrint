@@ -34,7 +34,10 @@ function loadConfig(): array
     }
     $v = getenv('CUPS_SERVER');
     if ($v !== false && $v !== '') {
-        $env['cups_server'] = (string)$v;
+        $h = trim((string)$v);
+        if (preg_match('/^[A-Za-z0-9._-]+$/', $h) || filter_var($h, FILTER_VALIDATE_IP)) {
+            $env['cups_server'] = $h;
+        }
     }
     $v = getenv('CUPS_PORT');
     if ($v !== false && $v !== '' && ctype_digit((string)$v)) {

@@ -19,3 +19,7 @@ RewriteRule ^(.+)$ $1.php [L,QSA]
   Require all denied
   Satisfy All
 </Files>
+<Files "UploadHandler.php">
+  Require all denied
+  Satisfy All
+</Files>

@@ -25,5 +25,6 @@ return [
         'image/pwg-raster',
         'image/urf',
     ],
+    // Plain text or bcrypt hash (php -r "echo password_hash('monmdp', PASSWORD_BCRYPT);")
     'index_password'     => '',
 ];
