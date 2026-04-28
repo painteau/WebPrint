@@ -44,6 +44,11 @@ return [
 ];
 ```
 
+## ❤️ Health Check
+- URL: `GET http://<host>/health`
+- Response: `{"status":"ok"}` — HTTP 200
+- No authentication required. Suitable for Docker/reverse proxy health checks.
+
 ## 🌐 Web UI
 - URL: `http://<pi-host-or-ip>/index`
 - Action: upload a PDF and click “Imprimer”
