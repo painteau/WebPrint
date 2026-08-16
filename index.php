@@ -43,22 +43,28 @@ $acceptAttr = implode(',', $allowedForAccept);
 
 if ($pwd !== '' && (!isset($_SESSION['index_auth']) || $_SESSION['index_auth'] !== true)) {
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login_password'])) {
+        require_once __DIR__ . '/app/RateLimiter.php';
+        $clientIp = (string)($_SERVER['REMOTE_ADDR'] ?? '');
         $inp = (string)($_POST['login_password'] ?? '');
         $postCsrf = (string)($_POST['csrf'] ?? '');
         $attempts = (int)($_SESSION['login_attempts'] ?? 0);
         $lockUntil = (int)($_SESSION['login_lock_until'] ?? 0);
-        if ($lockUntil > time()) {
-            $message = 'Trop de tentatives. Réessayez dans ' . ceil(($lockUntil - time()) / 60) . ' min.';
+        $ipLock = loginRateLimitCheck($clientIp);
+        if ($ipLock['locked'] || $lockUntil > time()) {
+            $retryAfter = max($ipLock['retryAfter'], $lockUntil - time());
+            $message = 'Trop de tentatives. Réessayez dans ' . ceil($retryAfter / 60) . ' min.';
         } elseif ($postCsrf === '' || !hash_equals($csrf, $postCsrf)) {
             $message = 'Requête invalide';
         } elseif ($inp !== '' && (str_starts_with($pwd, '$2y$') ? password_verify($inp, $pwd) : hash_equals($pwd, $inp))) {
             $_SESSION['index_auth'] = true;
             $_SESSION['login_attempts'] = 0;
+            loginRateLimitReset($clientIp);
             header('Location: index');
             exit;
         } else {
             $attempts++;
             $_SESSION['login_attempts'] = $attempts;
+            loginRateLimitRecordFailure($clientIp);
             if ($attempts >= 5) {
                 $_SESSION['login_lock_until'] = time() + 300;
                 $_SESSION['login_attempts'] = 0;

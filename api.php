@@ -9,6 +9,12 @@ header('Referrer-Policy: no-referrer');
 header("Content-Security-Policy: default-src 'none'");
 $config = loadConfig();
 
+if (isWeakApiToken($config['api_token'] ?? null)) {
+    error_log('WebPrint: refusing to serve /api, api_token is empty/default/too short');
+    jsonOut(503, ['success' => false, 'message' => 'Service misconfigured']);
+    exit;
+}
+
 function jsonOut(int $status, array $payload): void {
     http_response_code($status);
     header('Content-Type: application/json');

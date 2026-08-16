@@ -67,3 +67,13 @@ function loadConfig(): array
 
     return array_merge($cfg, $env);
 }
+
+/**
+ * Refuses to consider api_token safe if left empty, at the documented
+ * placeholder value, or too short to resist brute-forcing.
+ */
+function isWeakApiToken(?string $token): bool
+{
+    $t = (string)$token;
+    return $t === '' || $t === 'CHANGE_ME_SECRET_TOKEN' || strlen($t) < 16;
+}
