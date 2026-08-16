@@ -10,6 +10,9 @@ if (($sf && realpath(__FILE__) === realpath($sf)) || (basename($_SERVER['SCRIPT_
 // Configuration for printer and API
 return [
     'printer_name'       => 'DeskJet_3630',
+    // Either a flat list (label = CUPS queue name) or a map of
+    // CUPS queue name => friendly display label for the public UI:
+    // 'printers' => ['DeskJet_3630' => 'Imprimante salon'],
     'printers'           => ['DeskJet_3630'],
     'cups_server'        => 'localhost',
     'cups_port'          => 631,

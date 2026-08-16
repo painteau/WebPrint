@@ -15,21 +15,12 @@ header("Content-Security-Policy: default-src 'self'");
 $pwd = (string)($config['index_password'] ?? '');
 $message = null;
 $ok = false;
-$printers = [];
+$printers = getValidatedPrinters($config);
 $defaultPrinter = (string)($config['printer_name'] ?? '');
-if (isset($config['printers']) && is_array($config['printers'])) {
-    $printers = array_values(array_filter(array_map('strval', $config['printers']), static fn($p) => $p !== ''));
-}
-if (empty($printers) && $defaultPrinter !== '') {
-    $printers = [$defaultPrinter];
-}
-if ($defaultPrinter === '' && !empty($printers)) {
-    $defaultPrinter = (string)$printers[0];
+if (!array_key_exists($defaultPrinter, $printers) && !empty($printers)) {
+    $defaultPrinter = array_key_first($printers);
 }
 $selectedPrinter = $defaultPrinter;
-if (!empty($printers) && !in_array($selectedPrinter, $printers, true)) {
-    $selectedPrinter = (string)$printers[0];
-}
 
 $csrf = $_SESSION['csrf'] ?? null;
 if (!is_string($csrf) || $csrf === '') {
@@ -87,7 +78,7 @@ if ($pwd !== '' && (!isset($_SESSION['index_auth']) || $_SESSION['index_auth'] !
     }
     if (isset($_POST['printer'])) {
         $p = (string)$_POST['printer'];
-        if ($p !== '' && in_array($p, $printers, true)) {
+        if ($p !== '' && array_key_exists($p, $printers)) {
             $selectedPrinter = $p;
         } else {
             $message = 'Imprimante invalide';
@@ -173,8 +164,8 @@ if ($pwd !== '' && (!isset($_SESSION['index_auth']) || $_SESSION['index_auth'] !
             <input type="hidden" name="csrf" value="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>">
             <label for="printer">Imprimante</label>
             <select id="printer" name="printer" required>
-                <?php foreach ($printers as $p): ?>
-                    <option value="<?= htmlspecialchars($p, ENT_QUOTES, 'UTF-8') ?>" <?= $p === $selectedPrinter ? 'selected' : '' ?>><?= htmlspecialchars($p, ENT_QUOTES, 'UTF-8') ?></option>
+                <?php foreach ($printers as $name => $label): ?>
+                    <option value="<?= htmlspecialchars($name, ENT_QUOTES, 'UTF-8') ?>" <?= $name === $selectedPrinter ? 'selected' : '' ?>><?= htmlspecialchars($label, ENT_QUOTES, 'UTF-8') ?></option>
                 <?php endforeach; ?>
             </select>
             <label for="file">Fichier</label>
@@ -197,7 +188,7 @@ if ($pwd !== '' && (!isset($_SESSION['index_auth']) || $_SESSION['index_auth'] !
         <?php if ($pwd !== '' && (!isset($_SESSION['index_auth']) || $_SESSION['index_auth'] !== true)): ?>
             Accès protégé · Entrez le mot de passe
         <?php else: ?>
-            Imprimante : <?= htmlspecialchars($selectedPrinter, ENT_QUOTES, 'UTF-8') ?> · Taille max : <?= (int)($config['max_file_size_mb'] ?? 10) ?> Mo · Types : PDF, JPEG, PNG, TIFF, texte
+            Imprimante : <?= htmlspecialchars($printers[$selectedPrinter] ?? $selectedPrinter, ENT_QUOTES, 'UTF-8') ?> · Taille max : <?= (int)($config['max_file_size_mb'] ?? 10) ?> Mo · Types : PDF, JPEG, PNG, TIFF, texte
         <?php endif; ?>
         <div class="footer-meta">WebPrint — créé par Painteau · <a href="https://github.com/painteau/WebPrint" target="_blank" rel="noopener noreferrer">Projet GitHub</a> · <a href="LICENSE" target="_blank" rel="noopener noreferrer">License</a></div>
     </footer>

@@ -26,10 +26,26 @@ function loadConfig(): array
     }
     $v = getenv('PRINTERS');
     if ($v !== false && $v !== '') {
-        $parts = array_map(static fn($x) => trim((string)$x), explode(',', (string)$v));
-        $parts = array_values(array_filter($parts, static fn($x) => $x !== '' && preg_match('/^[A-Za-z0-9._-]+$/', $x)));
-        if (!empty($parts)) {
-            $env['printers'] = $parts;
+        $printers = [];
+        foreach (explode(',', (string)$v) as $part) {
+            $part = trim($part);
+            if ($part === '') {
+                continue;
+            }
+            if (str_contains($part, '=')) {
+                [$name, $label] = explode('=', $part, 2);
+                $name = trim($name);
+                $label = trim($label);
+            } else {
+                $name = $part;
+                $label = $part;
+            }
+            if (preg_match('/^[A-Za-z0-9._-]+$/', $name)) {
+                $printers[$name] = $label;
+            }
+        }
+        if (!empty($printers)) {
+            $env['printers'] = $printers;
         }
     }
     $v = getenv('CUPS_SERVER');
@@ -86,6 +102,43 @@ function loadConfig(): array
     }
 
     return array_merge($cfg, $env);
+}
+
+function isValidPrinterName(string $name): bool
+{
+    return $name !== '' && preg_match('/\A[A-Za-z0-9._-]+\z/', $name) === 1;
+}
+
+/**
+ * `printers` accepts either a flat list (`['DeskJet_3630']`, label = queue
+ * name) or a map of CUPS queue name => display label (`['DeskJet_3630' =>
+ * 'Imprimante salon']`) for a friendlier public-facing name than the
+ * technical CUPS queue name.
+ *
+ * @return array<string, string> CUPS queue name => display label
+ */
+function getValidatedPrinters(array $config): array
+{
+    $raw = $config['printers'] ?? [];
+    $out = [];
+    if (is_array($raw)) {
+        foreach ($raw as $key => $value) {
+            $name = is_int($key) ? (string)$value : (string)$key;
+            $label = is_int($key) ? (string)$value : (string)$value;
+            if (!isValidPrinterName($name)) {
+                continue;
+            }
+            $label = preg_replace('/[\p{Cc}\p{Cf}]/u', '', $label) ?? '';
+            $label = trim($label);
+            $label = function_exists('mb_substr') ? mb_substr($label, 0, 60, 'UTF-8') : substr($label, 0, 60);
+            $out[$name] = $label !== '' ? $label : $name;
+        }
+    }
+    $defaultName = (string)($config['printer_name'] ?? '');
+    if (empty($out) && isValidPrinterName($defaultName)) {
+        $out[$defaultName] = $defaultName;
+    }
+    return $out;
 }
 
 function isValidScannerName(string $name): bool

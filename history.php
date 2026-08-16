@@ -22,6 +22,8 @@ header("Content-Security-Policy: default-src 'self'");
 $host = (string)($config['cups_server'] ?? 'localhost');
 $port = (int)($config['cups_port'] ?? 631);
 $jobs = listJobs(50, $host, $port);
+$scannerNames = array_keys(getValidatedScanners($config));
+$deviceLabels = getValidatedPrinters($config) + array_combine($scannerNames, $scannerNames);
 
 $statusLabels = [
     'sent'     => ['Envoyé', 'badge-pending'],
@@ -78,7 +80,7 @@ $typeLabels = [
                         <td><?= htmlspecialchars(date('Y-m-d H:i', (int)($j['ts'] ?? 0)), ENT_QUOTES, 'UTF-8') ?></td>
                         <td><?= htmlspecialchars($typeLabel, ENT_QUOTES, 'UTF-8') ?></td>
                         <td><?= htmlspecialchars((string)($j['filename'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
-                        <td><?= htmlspecialchars((string)($j['printer'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
+                        <td><?= htmlspecialchars($deviceLabels[$j['printer'] ?? ''] ?? (string)($j['printer'] ?? ''), ENT_QUOTES, 'UTF-8') ?></td>
                         <td><?= htmlspecialchars(strtoupper((string)($j['source'] ?? '')), ENT_QUOTES, 'UTF-8') ?></td>
                         <td><span class="badge <?= htmlspecialchars($badgeClass, ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($label, ENT_QUOTES, 'UTF-8') ?></span></td>
                         <td>

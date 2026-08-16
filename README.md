@@ -17,7 +17,7 @@ Apache2 + PHP 8.
   - `cp app/config.php.example app/config.php`
 - Edit `app/config.php` and set:
   - `printer_name`: CUPS printer name
-  - `printers`: optional array of printer names for UI selection
+  - `printers`: optional — either a flat list of CUPS queue names, or a map of `queue_name => display_label` for a friendlier public-facing name than the technical CUPS queue name (e.g. `['DeskJet_3630' => 'Imprimante salon']`)
   - `cups_server`: usually `localhost`
   - `cups_port`: usually `631`
   - `api_token`: secret token for the API (change it!)
@@ -31,7 +31,7 @@ Example:
 ```php
 return [
     'printer_name'       => 'DeskJet_3630',
-    'printers'           => ['DeskJet_3630', 'OfficeLaser'],
+    'printers'           => ['DeskJet_3630' => 'Imprimante salon', 'OfficeLaser' => 'Imprimante bureau'],
     'cups_server'        => 'localhost',
     'cups_port'          => 631,
     'api_token'          => 'CHANGE_ME_SECRET_TOKEN',
@@ -187,7 +187,7 @@ curl -s -H "Authorization: Bearer CHANGE_ME_SECRET_TOKEN" \
 
 ### Environment Variables
 - `PRINTER_NAME`: CUPS printer name (ex: `DeskJet_3630`)
-- `PRINTERS`: comma-separated printers list (ex: `DeskJet_3630,OfficeLaser`)
+- `PRINTERS`: comma-separated printers list — plain queue names (ex: `DeskJet_3630,OfficeLaser`) or `queue_name=Display Label` pairs (ex: `DeskJet_3630=Imprimante salon,OfficeLaser=Imprimante bureau`)
 - `CUPS_SERVER`: CUPS host (Docker Desktop: `host.docker.internal`, Linux: host IP)
 - `CUPS_PORT`: CUPS port (default `631`)
 - `API_TOKEN`: token for HTTP API auth

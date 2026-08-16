@@ -25,18 +25,15 @@ if (!isValidBearerAuth($config)) {
     exit;
 }
 
-$printers = [];
+$printers = getValidatedPrinters($config);
 $defaultPrinter = (string)($config['printer_name'] ?? '');
-if (isset($config['printers']) && is_array($config['printers'])) {
-    $printers = array_values(array_filter(array_map('strval', $config['printers']), static fn($p) => $p !== ''));
-}
-if (empty($printers) && $defaultPrinter !== '') {
-    $printers = [$defaultPrinter];
+if (!array_key_exists($defaultPrinter, $printers) && !empty($printers)) {
+    $defaultPrinter = array_key_first($printers);
 }
 $selectedPrinter = $defaultPrinter;
 if (isset($_POST['printer'])) {
     $p = (string)$_POST['printer'];
-    if ($p !== '' && preg_match('/^[A-Za-z0-9._-]+$/', $p) && in_array($p, $printers, true)) {
+    if ($p !== '' && array_key_exists($p, $printers)) {
         $selectedPrinter = $p;
     } else {
         jsonOut(400, ['success' => false, 'message' => 'Unknown printer']);
