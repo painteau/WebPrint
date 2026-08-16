@@ -26,6 +26,7 @@ $jobs = listJobs(50, $host, $port);
 $statusLabels = [
     'sent'     => ['Envoyé', 'badge-pending'],
     'queued'   => ['En file', 'badge-pending'],
+    'scanning' => ['En cours', 'badge-pending'],
     'done'     => ['Terminé', 'badge-ok'],
     'failed'   => ['Échec', 'badge-err'],
     'rejected' => ['Rejeté', 'badge-err'],

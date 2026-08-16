@@ -127,3 +127,58 @@ function isWeakApiToken(?string $token): bool
     $t = (string)$token;
     return $t === '' || $t === 'CHANGE_ME_SECRET_TOKEN' || strlen($t) < 16;
 }
+
+function jsonOut(int $status, array $payload): void
+{
+    http_response_code($status);
+    header('Content-Type: application/json');
+    echo json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+}
+
+function getAuthHeader(): ?string
+{
+    if (isset($_SERVER['HTTP_AUTHORIZATION'])) {
+        return (string)$_SERVER['HTTP_AUTHORIZATION'];
+    }
+    if (function_exists('getallheaders')) {
+        $headers = getallheaders();
+        foreach ($headers as $k => $v) {
+            if (strcasecmp($k, 'Authorization') === 0) {
+                return (string)$v;
+            }
+        }
+    }
+    return null;
+}
+
+/**
+ * Checks a request's `Authorization: Bearer <token>` header against the
+ * configured api_token (constant-time, and only if the token isn't weak).
+ */
+function isValidBearerAuth(array $config): bool
+{
+    if (isWeakApiToken($config['api_token'] ?? null)) {
+        return false;
+    }
+    $auth = getAuthHeader();
+    if (!$auth || !preg_match('/^Bearer\s+(.+)$/i', $auth, $m)) {
+        return false;
+    }
+    return hash_equals((string)$config['api_token'], $m[1]);
+}
+
+/**
+ * Callers supply this at request time (unlike the admin-configured
+ * `scanners` URLs), so it must accept arbitrary hosts/paths — just check
+ * it's a well-formed http(s) URL. The caller is already an authenticated
+ * Bearer-token holder (same trust level as the rest of the API), so this
+ * isn't hardened against SSRF from a hostile caller.
+ */
+function isValidWebhookUrl(string $url): bool
+{
+    if (filter_var($url, FILTER_VALIDATE_URL) === false) {
+        return false;
+    }
+    $scheme = parse_url($url, PHP_URL_SCHEME);
+    return $scheme === 'http' || $scheme === 'https';
+}

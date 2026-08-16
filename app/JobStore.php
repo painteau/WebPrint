@@ -139,6 +139,44 @@ function findJobById(string $id): ?array
 }
 
 /**
+ * Merges the given fields into an existing job record (used by the async
+ * scan worker to move a job from "scanning" to its final state).
+ *
+ * @param array{status?:string,message?:string,filename?:string,file?:?string} $fields
+ */
+function updateJob(string $id, array $fields): bool
+{
+    if (preg_match('/\A[a-f0-9]{12}\z/', $id) !== 1) {
+        return false;
+    }
+    $jobs = readJobs();
+    $found = false;
+    foreach ($jobs as $idx => $job) {
+        if (($job['id'] ?? '') !== $id) {
+            continue;
+        }
+        $found = true;
+        if (isset($fields['status'])) {
+            $jobs[$idx]['status'] = sanitizeJobText((string)$fields['status'], 20);
+        }
+        if (isset($fields['message'])) {
+            $jobs[$idx]['message'] = sanitizeJobText((string)$fields['message'], 300);
+        }
+        if (isset($fields['filename'])) {
+            $jobs[$idx]['filename'] = sanitizeJobText((string)$fields['filename'], 150);
+        }
+        if (array_key_exists('file', $fields)) {
+            $jobs[$idx]['file'] = !empty($fields['file']) ? sanitizeJobText((string)$fields['file'], 150) : null;
+        }
+        break;
+    }
+    if ($found) {
+        writeJobs($jobs);
+    }
+    return $found;
+}
+
+/**
  * Best-effort refresh: jobs still marked "sent" (accepted by CUPS) are checked
  * against the current CUPS queue in a single lpstat call; if no longer queued
  * they're assumed completed. Jobs older than JOBSTORE_STATUS_MAX_AGE are left

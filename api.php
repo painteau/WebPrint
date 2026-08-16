@@ -15,40 +15,13 @@ if (isWeakApiToken($config['api_token'] ?? null)) {
     exit;
 }
 
-function jsonOut(int $status, array $payload): void {
-    http_response_code($status);
-    header('Content-Type: application/json');
-    echo json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
-}
-
-function getAuthHeader(): ?string {
-    if (isset($_SERVER['HTTP_AUTHORIZATION'])) {
-        return (string)$_SERVER['HTTP_AUTHORIZATION'];
-    }
-    if (function_exists('getallheaders')) {
-        $headers = getallheaders();
-        foreach ($headers as $k => $v) {
-            if (strcasecmp($k, 'Authorization') === 0) {
-                return (string)$v;
-            }
-        }
-    }
-    return null;
-}
-
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     jsonOut(405, ['success' => false, 'message' => 'Method not allowed']);
     exit;
 }
 
-$auth = getAuthHeader();
-if (!$auth || !preg_match('/^Bearer\s+(.+)$/i', $auth, $m)) {
+if (!isValidBearerAuth($config)) {
     jsonOut(401, ['success' => false, 'message' => 'Missing or invalid token']);
-    exit;
-}
-$token = $m[1];
-if (!hash_equals((string)$config['api_token'], $token)) {
-    jsonOut(401, ['success' => false, 'message' => 'Unauthorized']);
     exit;
 }
 

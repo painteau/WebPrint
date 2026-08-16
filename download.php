@@ -10,9 +10,20 @@ if (PHP_SESSION_ACTIVE !== session_status()) {
     session_start();
 }
 $pwd = (string)($config['index_password'] ?? '');
-if ($pwd !== '' && (!isset($_SESSION['index_auth']) || $_SESSION['index_auth'] !== true)) {
-    header('Location: index');
-    exit;
+$sessionAuthed = $pwd === '' || (isset($_SESSION['index_auth']) && $_SESSION['index_auth'] === true);
+if (!$sessionAuthed) {
+    if (getAuthHeader() !== null) {
+        // Looks like an API call (Authorization header present) — respond
+        // with a plain 401 instead of redirecting to the login page.
+        if (!isValidBearerAuth($config)) {
+            http_response_code(401);
+            echo 'Unauthorized';
+            exit;
+        }
+    } else {
+        header('Location: index');
+        exit;
+    }
 }
 
 $id = (string)($_GET['id'] ?? '');

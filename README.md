@@ -76,7 +76,7 @@ return [
 - Scans over the network via eSCL/AirScan (`scanimage` + `sane-airscan`), no USB/device passthrough
 - Options: scanner, resolution (75 to 1200 dpi), color mode (color/grayscale), format (PDF/JPEG/PNG)
 - Result files are saved under `app/data/scans/` (gitignored, blocked from direct HTTP access) and downloadable from the scan result page or from `/history`
-- `GET /download?id=<job id>` streams a scanned file — requires the same optional `index_password` session as the rest of the UI
+- `GET /download?id=<job id>` streams a scanned file — requires either the same UI session as the rest of the app, or a valid `Authorization: Bearer <api_token>` header
 
 ## 🔐 HTTP API
 - Method: `POST`
@@ -96,6 +96,49 @@ curl -X POST \
   -F "printer=DeskJet_3630" \
   -F "file=@/path/to/document.pdf" \
   http://<pi-host-or-ip>/api
+```
+
+## 🔐 HTTP API — Scan (async)
+Scanning can take well over a minute at high resolution, so this endpoint starts the scan in a
+detached background process and responds immediately with a job id — poll `/api-status` (or use
+the optional webhook) instead of waiting on the request.
+
+- Method: `POST`
+- URL: `http://<pi-host-or-ip>/api-scan`
+- Auth: `Authorization: Bearer <token>` (same `api_token` as `/api`)
+- Request: form fields, all optional — `scanner` (defaults to the first configured scanner), `resolution` (defaults `300`), `mode` (`Color`/`Gray`, defaults `Color`), `format` (`pdf`/`jpeg`/`png`, defaults `pdf`), `webhook_url` (optional, see below)
+- Response (JSON, `202 Accepted` on success):
+  - ✅ Success: `{"success": true, "message": "Scan started", "job_id": "a1b2c3d4e5f6", "status": "scanning", "status_url": "/api-status?id=a1b2c3d4e5f6"}`
+  - ❌ Error: `{"success": false, "message": "Error description"}`
+
+### Check status
+- `GET /api-status?id=<job_id>` with the same `Authorization: Bearer <token>` header
+- Response: `{"success": true, "job_id": "...", "status": "scanning|done|failed", "message": "...", "download_url": "/download?id=..." }` (`download_url` is `null` until `status` is `done`)
+
+### Fetch the result
+- `GET /download?id=<job_id>` with the same `Authorization: Bearer <token>` header (or a logged-in UI session)
+
+### Optional webhook
+- Pass `webhook_url` (any `http(s)://` URL) and WebPrint `POST`s a JSON payload to it once the scan finishes — `{"job_id": "...", "status": "done|failed", "message": "...", "download_url": "..."}`
+- Signed with header `X-WebPrint-Signature: sha256=<hmac>` (HMAC-SHA256 of the raw JSON body, keyed with `api_token`) so the receiver can verify it came from this instance
+- Best-effort, single attempt, no retry — fine for a personal automation trigger (e.g. an n8n workflow), not for guaranteed delivery
+- `webhook_url` is supplied by the (already Bearer-authenticated) caller at request time, so it isn't restricted to specific hosts/ports the way the admin-configured `scanners` URLs are
+
+### 🧪 cURL Example
+```bash
+RESP=$(curl -s -X POST \
+  -H "Authorization: Bearer CHANGE_ME_SECRET_TOKEN" \
+  -F "scanner=DeskJet_3630" -F "resolution=300" -F "mode=Color" -F "format=pdf" \
+  http://<pi-host-or-ip>/api-scan)
+JOB_ID=$(echo "$RESP" | grep -o '"job_id":"[^"]*"' | cut -d'"' -f4)
+
+# poll until status is done/failed
+curl -s -H "Authorization: Bearer CHANGE_ME_SECRET_TOKEN" \
+  "http://<pi-host-or-ip>/api-status?id=$JOB_ID"
+
+# then fetch the file
+curl -s -H "Authorization: Bearer CHANGE_ME_SECRET_TOKEN" \
+  "http://<pi-host-or-ip>/download?id=$JOB_ID" -o scan.pdf
 ```
 
 ## 🚀 Enable Clean URLs

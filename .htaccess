@@ -38,3 +38,8 @@ RewriteRule ^(.+)$ $1.php [L,QSA]
   Require all denied
   Satisfy All
 </Files>
+
+<Files "scan-worker.php">
+  Require all denied
+  Satisfy All
+</Files>
