@@ -3,6 +3,10 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/app/ConfigLoader.php';
 require_once __DIR__ . '/app/JobStore.php';
+header('X-Frame-Options: DENY');
+header('X-Content-Type-Options: nosniff');
+header('Referrer-Policy: no-referrer');
+header("Content-Security-Policy: default-src 'none'");
 $config = loadConfig();
 $isHttps = ((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || (isset($_SERVER['SERVER_PORT']) && (string)$_SERVER['SERVER_PORT'] === '443'));
 if (PHP_SESSION_ACTIVE !== session_status()) {
@@ -30,7 +34,6 @@ $id = (string)($_GET['id'] ?? '');
 $job = findJobById($id);
 if ($job === null || ($job['type'] ?? '') !== 'scan' || ($job['status'] ?? '') !== 'done' || empty($job['file'])) {
     http_response_code(404);
-    header('X-Content-Type-Options: nosniff');
     echo 'Not found';
     exit;
 }
@@ -38,7 +41,6 @@ if ($job === null || ($job['type'] ?? '') !== 'scan' || ($job['status'] ?? '') !
 $path = scansDir() . '/' . basename((string)$job['file']);
 if (!is_file($path)) {
     http_response_code(404);
-    header('X-Content-Type-Options: nosniff');
     echo 'Not found';
     exit;
 }
@@ -55,6 +57,4 @@ $downloadName = basename((string)$job['file']);
 header('Content-Type: ' . $mime);
 header('Content-Disposition: attachment; filename="' . $downloadName . '"');
 header('Content-Length: ' . (string)filesize($path));
-header('X-Content-Type-Options: nosniff');
-header("Content-Security-Policy: default-src 'none'");
 readfile($path);

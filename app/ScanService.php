@@ -23,6 +23,7 @@ class ScanService
     ];
 
     private const SANE_CONF_PATH = '/etc/sane.d/airscan.conf';
+    private const LOCK_PATH = '/tmp/webprint_scan.lock';
 
     /** @var array<string, string> scanner name => eSCL base URL */
     private array $scanners;
@@ -98,40 +99,57 @@ class ScanService
             return ['success' => false, 'message' => 'Invalid format', 'path' => null, 'ext' => null, 'mime' => null];
         }
 
-        if (!$this->syncSaneConfig()) {
-            return ['success' => false, 'message' => 'Unable to write scanner configuration', 'path' => null, 'ext' => null, 'mime' => null];
+        // A physical scanner can only serve one request at a time — hammering
+        // it with overlapping scans (UI + API, or several rapid API calls)
+        // has been observed to leave a real device unreachable on the network
+        // for several minutes. Reject overlapping scans instead of racing it.
+        $lockFh = @fopen(self::LOCK_PATH, 'c');
+        if ($lockFh === false || !flock($lockFh, LOCK_EX | LOCK_NB)) {
+            if ($lockFh !== false) {
+                fclose($lockFh);
+            }
+            return ['success' => false, 'message' => 'Scanner busy, try again in a moment', 'path' => null, 'ext' => null, 'mime' => null];
         }
 
-        $device = $this->resolveDevice($scannerName);
-        if ($device === null) {
-            return ['success' => false, 'message' => 'Scanner not reachable', 'path' => null, 'ext' => null, 'mime' => null];
+        try {
+            if (!$this->syncSaneConfig()) {
+                return ['success' => false, 'message' => 'Unable to write scanner configuration', 'path' => null, 'ext' => null, 'mime' => null];
+            }
+
+            $device = $this->resolveDevice($scannerName);
+            if ($device === null) {
+                return ['success' => false, 'message' => 'Scanner not reachable', 'path' => null, 'ext' => null, 'mime' => null];
+            }
+
+            $ext = self::ALLOWED_FORMATS[$format]['ext'];
+            $mime = self::ALLOWED_FORMATS[$format]['mime'];
+            $dest = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'scan_' . time() . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
+
+            $cmd = sprintf(
+                'scanimage -d %s --format=%s --resolution=%s --mode=%s -o %s 2>&1',
+                escapeshellarg($device),
+                escapeshellarg($format),
+                escapeshellarg((string)$resolution),
+                escapeshellarg($mode),
+                escapeshellarg($dest)
+            );
+
+            $outputLines = [];
+            $exitCode = 0;
+            exec($cmd, $outputLines, $exitCode);
+
+            if ($exitCode !== 0 || !is_file($dest)) {
+                @unlink($dest);
+                $output = trim(implode("\n", $outputLines));
+                return ['success' => false, 'message' => $output !== '' ? $output : 'scanimage command failed', 'path' => null, 'ext' => null, 'mime' => null];
+            }
+
+            error_log(sprintf('WebPrint: scan completed from %s, file=%s', $scannerName, basename($dest)));
+
+            return ['success' => true, 'message' => 'Scan completed', 'path' => $dest, 'ext' => $ext, 'mime' => $mime];
+        } finally {
+            flock($lockFh, LOCK_UN);
+            fclose($lockFh);
         }
-
-        $ext = self::ALLOWED_FORMATS[$format]['ext'];
-        $mime = self::ALLOWED_FORMATS[$format]['mime'];
-        $dest = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'scan_' . time() . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
-
-        $cmd = sprintf(
-            'scanimage -d %s --format=%s --resolution=%s --mode=%s -o %s 2>&1',
-            escapeshellarg($device),
-            escapeshellarg($format),
-            escapeshellarg((string)$resolution),
-            escapeshellarg($mode),
-            escapeshellarg($dest)
-        );
-
-        $outputLines = [];
-        $exitCode = 0;
-        exec($cmd, $outputLines, $exitCode);
-
-        if ($exitCode !== 0 || !is_file($dest)) {
-            @unlink($dest);
-            $output = trim(implode("\n", $outputLines));
-            return ['success' => false, 'message' => $output !== '' ? $output : 'scanimage command failed', 'path' => null, 'ext' => null, 'mime' => null];
-        }
-
-        error_log(sprintf('WebPrint: scan completed from %s, file=%s', $scannerName, basename($dest)));
-
-        return ['success' => true, 'message' => 'Scan completed', 'path' => $dest, 'ext' => $ext, 'mime' => $mime];
     }
 }

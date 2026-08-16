@@ -40,6 +40,11 @@ $mode = isset($_POST['mode']) ? (string)$_POST['mode'] : 'Color';
 $format = isset($_POST['format']) ? (string)$_POST['format'] : 'pdf';
 $webhookUrl = isset($_POST['webhook_url']) ? trim((string)$_POST['webhook_url']) : '';
 
+if (strlen($scannerName) > 100 || strlen($mode) > 20 || strlen($format) > 20 || strlen($webhookUrl) > 2048) {
+    jsonOut(400, ['success' => false, 'message' => 'Field too long']);
+    exit;
+}
+
 if (!in_array($scannerName, $scannerNames, true)) {
     jsonOut(400, ['success' => false, 'message' => 'Unknown scanner']);
     exit;
