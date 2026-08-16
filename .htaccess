@@ -23,3 +23,13 @@ RewriteRule ^(.+)$ $1.php [L,QSA]
   Require all denied
   Satisfy All
 </Files>
+
+<Files "JobStore.php">
+  Require all denied
+  Satisfy All
+</Files>
+
+<Files "RateLimiter.php">
+  Require all denied
+  Satisfy All
+</Files>

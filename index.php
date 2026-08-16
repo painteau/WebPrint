@@ -97,9 +97,19 @@ if ($pwd !== '' && (!isset($_SESSION['index_auth']) || $_SESSION['index_auth'] !
         $message = 'Aucun fichier reçu';
     } elseif ($message === null) {
         require_once __DIR__ . '/app/UploadHandler.php';
+        require_once __DIR__ . '/app/JobStore.php';
+        $originalName = sanitizeJobText((string)($_FILES['file']['name'] ?? ''), 150);
         $upload = handleUpload($_FILES['file'], $config);
         if (!$upload['ok']) {
             $message = $upload['error'];
+            addJob([
+                'source'   => 'ui',
+                'printer'  => $selectedPrinter,
+                'filename' => $originalName,
+                'status'   => 'rejected',
+                'job_id'   => null,
+                'message'  => $upload['error'],
+            ]);
         } else {
             $dest = $upload['path'];
             require_once __DIR__ . '/app/PrinterService.php';
@@ -110,6 +120,14 @@ if ($pwd !== '' && (!isset($_SESSION['index_auth']) || $_SESSION['index_auth'] !
             }
             $ok = (bool)$result['success'];
             $message = $result['message'] . ($result['job_id'] ? ' (ID: ' . $result['job_id'] . ')' : '');
+            addJob([
+                'source'   => 'ui',
+                'printer'  => $selectedPrinter,
+                'filename' => $originalName,
+                'status'   => $ok ? 'sent' : 'failed',
+                'job_id'   => $result['job_id'],
+                'message'  => $result['message'],
+            ]);
         }
     }
 }
@@ -160,11 +178,15 @@ if ($pwd !== '' && (!isset($_SESSION['index_auth']) || $_SESSION['index_auth'] !
                 <?php endforeach; ?>
             </select>
             <label for="file">Fichier</label>
-            <input id="file" name="file" type="file" accept="<?= htmlspecialchars($acceptAttr, ENT_QUOTES, 'UTF-8') ?>" required>
+            <div class="dropzone" id="dropzone">
+                <input id="file" name="file" type="file" accept="<?= htmlspecialchars($acceptAttr, ENT_QUOTES, 'UTF-8') ?>" required>
+                <p class="dropzone-hint" id="dropzone-hint">ou glissez-deposez un fichier ici</p>
+            </div>
             <div class="actions">
                 <button type="submit">Imprimer</button>
             </div>
         </form>
+        <p class="nav-link"><a href="history">Voir l'historique des impressions</a></p>
     <?php endif; ?>
 
     <?php if ($message !== null): ?>
@@ -180,5 +202,6 @@ if ($pwd !== '' && (!isset($_SESSION['index_auth']) || $_SESSION['index_auth'] !
         <div class="footer-meta">WebPrint — créé par Painteau · <a href="https://github.com/painteau/WebPrint" target="_blank" rel="noopener noreferrer">Projet GitHub</a> · <a href="LICENSE" target="_blank" rel="noopener noreferrer">License</a></div>
     </footer>
 </main>
+<script src="app.js" defer></script>
 </body>
 </html>

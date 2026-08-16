@@ -81,6 +81,8 @@ if (!isset($_FILES['file'])) {
 }
 
 require_once __DIR__ . '/app/UploadHandler.php';
+require_once __DIR__ . '/app/JobStore.php';
+$originalName = sanitizeJobText((string)($_FILES['file']['name'] ?? ''), 150);
 $upload = handleUpload($_FILES['file'], $config);
 if (!$upload['ok']) {
     $httpStatus = match($upload['error']) {
@@ -89,6 +91,14 @@ if (!$upload['ok']) {
         'Unsupported media type' => 415,
         default                  => 500,
     };
+    addJob([
+        'source'   => 'api',
+        'printer'  => $selectedPrinter,
+        'filename' => $originalName,
+        'status'   => 'rejected',
+        'job_id'   => null,
+        'message'  => $upload['error'],
+    ]);
     jsonOut($httpStatus, ['success' => false, 'message' => $upload['error']]);
     exit;
 }
@@ -100,6 +110,15 @@ $result = $service->printPdf($dest, $selectedPrinter);
 if (!@unlink($dest)) {
     error_log('WebPrint: failed to delete tmp file ' . $dest);
 }
+
+addJob([
+    'source'   => 'api',
+    'printer'  => $selectedPrinter,
+    'filename' => $originalName,
+    'status'   => $result['success'] ? 'sent' : 'failed',
+    'job_id'   => $result['job_id'],
+    'message'  => $result['message'],
+]);
 
 if (!$result['success']) {
     jsonOut(502, ['success' => false, 'message' => $result['message']]);

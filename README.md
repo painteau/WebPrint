@@ -51,8 +51,15 @@ return [
 
 ## 🌐 Web UI
 - URL: `http://<pi-host-or-ip>/index`
-- Action: upload a PDF and click “Imprimer”
+- Action: upload a PDF (or drag & drop it onto the drop zone) and click “Imprimer”
 - Feedback: shows success/error and job ID when available
+
+## 🕘 Print History
+- URL: `http://<pi-host-or-ip>/history`
+- Shows the last 50 jobs (UI and API), with file name, printer, source, and status
+- Status: `Envoyé`/`En file` (accepted, CUPS queue checked on page load), `Terminé` (left the queue), `Échec` (rejected by CUPS), `Rejeté` (rejected before printing — bad MIME type, too large, etc.)
+- Protected by the same optional `index_password` as the Web UI
+- Stored as a small JSON file at `app/data/jobs.json` (gitignored, blocked from direct HTTP access, capped at 300 entries). In Docker, mount a volume over `app/data` to keep history across container recreations.
 
 ## 🔐 HTTP API
 - Method: `POST`
@@ -102,12 +109,14 @@ curl -X POST \
     ```bash
     php -r "echo password_hash('mypassword', PASSWORD_BCRYPT);"
     ```
-  - Login rate-limited: 5 failed attempts trigger a 5-minute lockout
+  - Login rate-limited: 5 failed attempts trigger a 5-minute lockout, tracked both per-session and per-IP (a dropped session cookie doesn't reset the lockout)
   - CSRF tokens on login and print forms
   - Security headers (CSP, nosniff, frame deny)
+- `/api` refuses to serve (`503`) if `api_token` is left empty, at the documented placeholder value, or under 16 characters
+- `display_errors` disabled in the Docker image (no stack traces/file paths leaked on uncaught errors)
 
 ## 📝 Notes
-- No DB, no sessions, no external dependencies
+- No external DB — a small JSON file (`app/data/jobs.json`) stores print history, no other persistence
 - Dark mode UI with responsive centered layout
 
 ## 🐳 Docker Usage
@@ -140,6 +149,9 @@ curl -X POST \
 - Mount local config instead of env:
   - Linux/macOS: `-v /path/to/config.php:/var/www/html/app/config.php:ro`
   - Windows PowerShell: `-v ${PWD}\app\config.php:/var/www/html/app/config.php:ro`
+- Persist print history across container recreations:
+  - Linux/macOS: `-v /path/to/data:/var/www/html/app/data`
+  - Windows PowerShell: `-v ${PWD}\data:/var/www/html/app/data`
 
 ### Configure CUPS Host
 - Docker Desktop: use `CUPS_SERVER=host.docker.internal`.
