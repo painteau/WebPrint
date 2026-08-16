@@ -23,6 +23,33 @@ function jobStoreFile(): string
     return $dir . '/jobs.json';
 }
 
+function scansDir(): string
+{
+    $dir = __DIR__ . '/data/scans';
+    if (!is_dir($dir)) {
+        @mkdir($dir, 0700, true);
+    }
+    return $dir;
+}
+
+/**
+ * Moves a scanned file (produced by ScanService in a temp path) into
+ * persistent storage under app/data/scans/, returning the stored filename
+ * (not the full path) for use as a JobStore 'file' reference, or null on
+ * failure.
+ */
+function storeScanFile(string $tmpPath, string $ext): ?string
+{
+    $safeExt = preg_match('/\A[a-z0-9]{1,10}\z/', $ext) === 1 ? $ext : 'bin';
+    $stored = 'scan_' . date('Ymd_His') . '_' . bin2hex(random_bytes(4)) . '.' . $safeExt;
+    $dest = scansDir() . '/' . $stored;
+    if (!@rename($tmpPath, $dest)) {
+        @unlink($tmpPath);
+        return null;
+    }
+    return $stored;
+}
+
 function sanitizeJobText(string $s, int $maxLen): string
 {
     $s = preg_replace('/[\p{Cc}\p{Cf}]/u', '', $s) ?? '';
@@ -75,22 +102,40 @@ function writeJobs(array $jobs): void
 }
 
 /**
- * @param array{source:string,printer:?string,filename:string,status:string,job_id:?string,message:string} $job
+ * @param array{type?:string,source:string,printer:?string,filename:string,status:string,job_id:?string,message:string,file?:?string} $job
+ * @return string the generated job id
  */
-function addJob(array $job): void
+function addJob(array $job): string
 {
+    $id = bin2hex(random_bytes(6));
     $jobs = readJobs();
     $jobs[] = [
-        'id'       => bin2hex(random_bytes(6)),
+        'id'       => $id,
         'ts'       => time(),
+        'type'     => sanitizeJobText((string)($job['type'] ?? 'print'), 10),
         'source'   => sanitizeJobText((string)($job['source'] ?? 'ui'), 10),
         'printer'  => sanitizeJobText((string)($job['printer'] ?? ''), 100),
         'filename' => sanitizeJobText((string)($job['filename'] ?? ''), 150),
         'status'   => sanitizeJobText((string)($job['status'] ?? 'sent'), 20),
         'job_id'   => $job['job_id'] !== null && $job['job_id'] !== '' ? sanitizeJobText((string)$job['job_id'], 20) : null,
         'message'  => sanitizeJobText((string)($job['message'] ?? ''), 300),
+        'file'     => !empty($job['file']) ? sanitizeJobText((string)$job['file'], 150) : null,
     ];
     writeJobs($jobs);
+    return $id;
+}
+
+function findJobById(string $id): ?array
+{
+    if (preg_match('/\A[a-f0-9]{12}\z/', $id) !== 1) {
+        return null;
+    }
+    foreach (readJobs() as $job) {
+        if (($job['id'] ?? '') === $id) {
+            return $job;
+        }
+    }
+    return null;
 }
 
 /**

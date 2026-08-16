@@ -27,4 +27,8 @@ return [
     ],
     // Plain text or bcrypt hash (php -r "echo password_hash('monmdp', PASSWORD_BCRYPT);")
     'index_password'     => '',
+    // Network scanners (eSCL/AirScan) — name => base URL, no USB/device passthrough needed
+    'scanners'           => [
+        'DeskJet_3630' => 'http://192.168.1.50/eSCL',
+    ],
 ];

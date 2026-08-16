@@ -186,7 +186,7 @@ if ($pwd !== '' && (!isset($_SESSION['index_auth']) || $_SESSION['index_auth'] !
                 <button type="submit">Imprimer</button>
             </div>
         </form>
-        <p class="nav-link"><a href="history">Voir l'historique des impressions</a></p>
+        <p class="nav-link"><a href="scan">Scanner un document</a> · <a href="history">Voir l'historique</a></p>
     <?php endif; ?>
 
     <?php if ($message !== null): ?>

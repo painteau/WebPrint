@@ -65,7 +65,57 @@ function loadConfig(): array
         $env['index_password'] = (string)$v;
     }
 
+    $v = getenv('SCANNERS');
+    if ($v !== false && $v !== '') {
+        $scanners = [];
+        foreach (explode(',', (string)$v) as $pair) {
+            $pair = trim($pair);
+            if ($pair === '' || !str_contains($pair, '=')) {
+                continue;
+            }
+            [$name, $url] = explode('=', $pair, 2);
+            $name = trim($name);
+            $url = trim($url);
+            if (isValidScannerName($name) && isValidScannerUrl($url)) {
+                $scanners[$name] = $url;
+            }
+        }
+        if (!empty($scanners)) {
+            $env['scanners'] = $scanners;
+        }
+    }
+
     return array_merge($cfg, $env);
+}
+
+function isValidScannerName(string $name): bool
+{
+    return $name !== '' && preg_match('/\A[A-Za-z0-9._-]+\z/', $name) === 1;
+}
+
+function isValidScannerUrl(string $url): bool
+{
+    return preg_match('/\Ahttps?:\/\/[A-Za-z0-9.-]+(:\d{1,5})?(\/[A-Za-z0-9\/_.-]*)?\z/', $url) === 1;
+}
+
+/**
+ * @return array<string, string> scanner name => eSCL base URL
+ */
+function getValidatedScanners(array $config): array
+{
+    $raw = $config['scanners'] ?? [];
+    if (!is_array($raw)) {
+        return [];
+    }
+    $out = [];
+    foreach ($raw as $name => $url) {
+        $name = (string)$name;
+        $url = (string)$url;
+        if (isValidScannerName($name) && isValidScannerUrl($url)) {
+            $out[$name] = $url;
+        }
+    }
+    return $out;
 }
 
 /**
